@@ -1,0 +1,63 @@
+{
+  "general": {
+    "siteName": "KidsGen Lab",
+    "supportEmail": "kidsgenlab@gmail.com",
+    "announcementEnabled": true,
+    "announcementText": "🎉 SALE IS LIVE: Save up to 60% on all Smart Kids Kits today!"
+  },
+  "payment": {
+    "gateway": "razorpay",
+    "isLiveMode": false,
+    "razorpayKeyId": "rzp_test_YourKeyHere",
+    "razorpayKeySecret": "u8i4Xlo32cZse7lcwAm0EhIX",
+    "currency": "INR",
+    "autoCapture": true
+  },
+  "whatsapp": {
+    "supportNumber": "919876543210",
+    "defaultMessage": "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
+    "autoNotificationEnabled": true,
+    "twilioEnabled": false
+  },
+  "affiliate": {
+    "wishlinkUrl": "https://wishlink.com/kidsgenlab",
+    "defaultCommissionRate": 15
+  },
+  "pricing": {
+    "solo": {
+      "name": "Starter Saver Kit",
+      "price": 1199,
+      "originalPrice": 1999,
+      "tagline": "The Irresistible Sweet Spot (Save 40%!)"
+    },
+    "starter": {
+      "name": "Little Achiever Kit",
+      "price": 1499,
+      "originalPrice": 3999,
+      "tagline": "Most Popular for ages 7-12 (Save 60%!)"
+    },
+    "sibling": {
+      "name": "Little Achiever Kit",
+      "price": 1499,
+      "originalPrice": 3999,
+      "tagline": "Most Popular for ages 7-12 (Save 60%!)"
+    },
+    "family": {
+      "name": "Family Champions Bundle",
+      "price": 2999,
+      "originalPrice": 5999,
+      "tagline": "Complete All-In-One Legacy Edition (Save 50%!)"
+    }
+  },
+  "theme": {
+    "primaryColor": "#0d9488",
+    "accentColor": "#f59e0b",
+    "headerBg": "#ffffff",
+    "bannerBg": "#000000",
+    "bannerTextColor": "#ffffff",
+    "buttonBg": "#000000",
+    "buttonTextColor": "#ffffff",
+    "borderRadius": "16px",
+    "customCss": "/* Custom Database CSS rules */\n.checkout-submit-btn {\n  /* Custom shadow or gradient from DB */\n  transition: all 0.2s ease;\n}\n"
+  }
+}

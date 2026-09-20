@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A clone of the Young Hustlers Kids Entrepreneurship Bundle landing page, built with pure HTML, CSS, and JS.",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
@@ -18,8 +18,12 @@
     "typescript": "6.0.2"
   },
   "dependencies": {
+    "@libsql/client": "^0.18.0",
+    "framer-motion": "^12.38.0",
+    "jimp": "^1.6.1",
     "lucide-react": "^1.7.0",
     "next": "^16.2.2",
+    "razorpay": "^2.9.8",
     "react": "^19.2.4",
     "react-dom": "^19.2.4"
   }
