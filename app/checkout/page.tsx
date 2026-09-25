@@ -45,7 +45,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 1999,
     tagline: 'Ideal for 1 Child • Physical Book + 7 Stickers',
     badge: 'Standard',
-    image: '/product1.png.jpeg',
+    image: '/kidsgenlab25.jpeg',
     features: 'Physical Activity Book + 7 Superpower Stickers Set'
   },
   sibling: {
@@ -55,7 +55,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 3999,
     tagline: 'Ages 7-12 • Book + Stickers + Medal + Certificate',
     badge: 'Most Popular',
-    image: '/product2.png.jpeg',
+    image: '/kidsgenlab26.jpeg',
     features: 'Complete Book + Superpower Stickers + Medal + Certificate'
   },
   family: {
@@ -65,7 +65,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 5999,
     tagline: 'VIP Family Kit + Parent Master Blueprint',
     badge: 'VIP Bundle',
-    image: '/product3.png.jpeg',
+    image: '/kidsgenlab27.jpeg',
     features: 'Full Family Kit + Parent Master Guide & Wealth Blueprint'
   }
 };
@@ -304,6 +304,52 @@ function CheckoutContent() {
     }
   };
 
+  const handleWhatsAppDirectOrder = async () => {
+    setFormError('');
+
+    if (!customerName.trim()) {
+      setFormError('Please enter your Full Name to place your order via WhatsApp.');
+      return;
+    }
+    const cleanPhone = phone.trim().replace(/\D/g, '');
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setFormError('Please enter a valid 10-digit Mobile Number.');
+      return;
+    }
+
+    saveDetailsToStorage();
+
+    const targetNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918300297197';
+    const addressParts = [
+      flatNo ? `Flat/House: ${flatNo}` : '',
+      address ? `Street/Area: ${address}` : '',
+      landmark ? `Landmark: ${landmark}` : '',
+      city ? `City: ${city}` : '',
+      district ? `District: ${district}` : '',
+      state ? `State: ${state}` : '',
+      pincode ? `Pincode: ${pincode}` : ''
+    ].filter(Boolean);
+
+    const formattedAddress = addressParts.join(', ');
+
+    // Customer is directly diverted to WhatsApp, order will only be in DB if manually added later or if paid via Razorpay
+
+    let msg = `NEW DIRECT ORDER VIA WHATSAPP\n`;
+    msg += `--------------------------------------\n`;
+    msg += `Selected Kit: ${activePackage.name}\n`;
+    msg += `Offer Price: ₹${activePackage.price.toLocaleString('en-IN')}\n`;
+    msg += `Customer Name: ${customerName.trim()}\n`;
+    msg += `Phone Number: ${cleanPhone}\n`;
+    if (formattedAddress) {
+      msg += `Delivery Address: ${formattedAddress}\n`;
+    }
+    msg += `--------------------------------------\n`;
+    msg += `Hi KidsGen Lab! I am placing this order for the ${activePackage.name} (₹${activePackage.price.toLocaleString('en-IN')}). Please confirm my order and share payment QR / tracking details!\n\n${window.location.origin}${activePackage.image}`;
+
+    const waUrl = `https://wa.me/${targetNumber}?text=${encodeURIComponent(msg)}`;
+    window.open(waUrl, '_blank');
+  };
+
   const handlePaymentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFormError('');
@@ -362,8 +408,16 @@ function CheckoutContent() {
 
       const createData = await createRes.json();
 
-      if (!createData.success || !createData.order_id) {
-        throw new Error(createData.message || 'Unable to connect to payment gateway.');
+      if (!createRes.ok || !createData || !createData.success || !createData.order_id) {
+        let errorMsg = 'Unable to connect to payment gateway.';
+        if (createData && typeof createData.message === 'string') {
+          errorMsg = createData.message;
+        } else if (createData && createData.error && typeof createData.error.description === 'string') {
+          errorMsg = createData.error.description;
+        }
+        setFormError(errorMsg);
+        setIsProcessing(false);
+        return;
       }
 
       const fullStreetAddress = landmark.trim()
@@ -458,15 +512,29 @@ function CheckoutContent() {
         }
       };
 
-      if (typeof window !== 'undefined' && (window as any).Razorpay) {
-        const rzp = new (window as any).Razorpay(options);
+      let Razorpay = typeof window !== 'undefined' ? (window as any).Razorpay : null;
+      if (!Razorpay) {
+        await new Promise((resolve) => {
+          const script = document.createElement('script');
+          script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+          script.onload = resolve;
+          script.onerror = resolve;
+          document.body.appendChild(script);
+        });
+        Razorpay = (window as any).Razorpay;
+      }
+
+      if (Razorpay) {
+        const rzp = new Razorpay(options);
         rzp.on('payment.failed', function (resp: any) {
           alert(`⚠️ Payment Failed: ${resp.error?.description || 'Transaction declined.'}`);
           setIsProcessing(false);
         });
         rzp.open();
       } else {
-        throw new Error('Payment gateway is loading. Please try again in 2 seconds.');
+        setFormError('Unable to load payment gateway. Please check your internet connection.');
+        setIsProcessing(false);
+        return;
       }
     } catch (err: any) {
       console.error('Checkout error:', err);
@@ -533,7 +601,7 @@ function CheckoutContent() {
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
             <a
-              href={`https://wa.me/919876543210?text=${encodeURIComponent(
+              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918300297197'}?text=${encodeURIComponent(
                 `Hi KidsGen Lab! I just completed my order #${paymentSuccessData.paymentId || 'NEW'} for ${paymentSuccessData.packageName} (₹${paymentSuccessData.price}). Please send my delivery tracking and confirmation!`
               )}`}
               target="_blank"
@@ -752,7 +820,7 @@ function CheckoutContent() {
             onSubmit={handlePaymentSubmit}
             id="checkoutAddressForm"
             name="checkoutAddressForm"
-            autoComplete="on"
+            autoComplete="off"
             method="post"
             action="#"
             suppressHydrationWarning={true}
@@ -1002,7 +1070,7 @@ function CheckoutContent() {
             </div>
 
             {/* PRIMARY HIGH-CONVERTING LUXURY PAY BUTTON */}
-            <div style={{ marginTop: '20px' }}>
+            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <button
                 type="submit"
                 disabled={isProcessing}
@@ -1011,25 +1079,53 @@ function CheckoutContent() {
               >
                 {isProcessing ? (
                   <>
-                    <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid #ffffff', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid #000000', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
                     <span>Connecting Payment Gateway...</span>
                   </>
                 ) : (
                   <>
-                    <Lock style={{ width: '18px', height: '18px' }} />
                     <span>Use this address & Pay ₹{activePackage.price.toLocaleString('en-IN')}</span>
                   </>
                 )}
               </button>
 
-              {/* Supported Payment Badges */}
-              <div className="payment-chips-row">
-                <span className="payment-chip">Google Pay</span>
-                <span className="payment-chip">PhonePe</span>
-                <span className="payment-chip">Paytm UPI</span>
-                <span className="payment-chip">Any UPI QR</span>
-                <span className="payment-chip">Cards / NetBanking</span>
+              {/* OR FAST ORDER ON WHATSAPP BUTTON */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}>
+                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>or fast checkout</span>
+                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
               </div>
+
+              <button
+                type="button"
+                onClick={handleWhatsAppDirectOrder}
+                suppressHydrationWarning={true}
+                style={{
+                  width: '100%',
+                  padding: '14px',
+                  borderRadius: '14px',
+                  border: 'none',
+                  backgroundColor: '#25D366',
+                  color: '#ffffff',
+                  fontWeight: 900,
+                  fontSize: '0.94rem',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  cursor: 'pointer',
+                  boxShadow: '0 6px 20px rgba(37, 211, 102, 0.35)',
+                  transition: 'transform 0.15s ease, background 0.15s ease'
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1ebe57')}
+                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#25D366')}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="22" height="22" fill="#ffffff">
+                  <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157.1zM223.9 436.8c-33.1 0-65.5-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
+                </svg>
+                <span>Order via WhatsApp (Pay on Chat)</span>
+              </button>
+
             </div>
 
           </form>

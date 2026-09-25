@@ -4,7 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import { getRazorpayCredentials } from '../../../lib/razorpay';
 import { insertOrder, getAllOrders } from '../../../lib/db';
-import { sendOrderConfirmationWhatsApp } from '../../../lib/whatsapp';
+import { sendOrderConfirmationWhatsApp, sendAdminOrderNotification } from '../../../lib/whatsapp';
 
 const dataFilePath = path.join(process.cwd(), 'data', 'orders.json');
 
@@ -119,6 +119,11 @@ export async function POST(request: Request) {
       if (savedOrder && savedOrder.phone) {
         sendOrderConfirmationWhatsApp(savedOrder).catch(waErr => {
           console.error('[WhatsApp Bot Notification Error]:', waErr);
+        });
+        
+        // Also trigger Admin Receipt alert
+        sendAdminOrderNotification(savedOrder).catch(adminErr => {
+          console.error('[WhatsApp Admin Alert Error]:', adminErr);
         });
       }
     }

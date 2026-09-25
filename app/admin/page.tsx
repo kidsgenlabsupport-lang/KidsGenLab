@@ -168,7 +168,7 @@ export default function AdminPage() {
       autoCapture: true
     },
     whatsapp: {
-      supportNumber: "919876543210",
+      supportNumber: "918300297197",
       defaultMessage: "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
       autoNotificationEnabled: true,
       provider: "meta",

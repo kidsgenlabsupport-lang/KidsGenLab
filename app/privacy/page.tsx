@@ -33,7 +33,7 @@ export default function PrivacyPolicyPage() {
           {/* KidsGenLab Logo */}
           <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none" }}>
             <img
-              src="/kidsgenlab_logo_transparent.png"
+              src="/kidsgenlab12.png"
               alt="KidsGenLab"
               style={{
                 height: "44px",

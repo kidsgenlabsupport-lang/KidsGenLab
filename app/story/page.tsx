@@ -40,13 +40,13 @@ const triggers = [
       desc: "Let them make 50 mistakes today—like buying a toy that breaks—to learn valuable lessons before the stakes get high.",
       bg: "bg-emerald-50",
       badgeBg: "bg-emerald-100 text-emerald-800 border-emerald-300",
-      img: "/with_icon_2.jpg"
+      img: "/kidsgenlab57.jpg"
     },
     shock: {
       emoji: "⚡",
       title: "Prevent 50 Lakh Debts",
       desc: "If they don't learn from tiny failures, they face massive credit card debt, bad loans, and severe financial anxiety in early adulthood.",
-      img: "/without_icon_4.jpg"
+      img: "/kidsgenlab51.jpg"
     }
   },
   {
@@ -57,13 +57,13 @@ const triggers = [
       desc: "Give children the defensive mental tools to spot spending traps, understand value, and resist aggressive media conditioning.",
       bg: "bg-cyan-50",
       badgeBg: "bg-cyan-100 text-cyan-800 border-cyan-300",
-      img: "/with_icon_4.jpg"
+      img: "/kidsgenlab59.jpg"
     },
     shock: {
       emoji: "⚡",
       title: "Market Exploitation",
       desc: "Large corporations spend billions designing ads specifically targeting children, turning them into lifetime impulsive spenders.",
-      img: "/without_icon_2.jpg"
+      img: "/kidsgenlab49.jpg"
     }
   },
   {
@@ -74,13 +74,13 @@ const triggers = [
       desc: "Establish clear, systemized rules (like the 4-Jar setup) so kids understand their financial limits without emotional disputes.",
       bg: "bg-amber-50",
       badgeBg: "bg-amber-100 text-amber-800 border-amber-300",
-      img: "/with_icon_1.jpg"
+      img: "/kidsgenlab56.jpg"
     },
     shock: {
       emoji: "⚡",
       title: "Stop Parent-Child Fights",
       desc: "Avoid constantly being the 'bad guy' who says no. Prevent constant begging, guilt-trips, and household friction.",
-      img: "/without_icon_1.jpg"
+      img: "/kidsgenlab48.jpg"
     }
   },
 
@@ -92,30 +92,30 @@ const triggers = [
       desc: "Coach kids to save automatically, invest early, and understand compounding so they build financial freedom naturally.",
       bg: "bg-violet-50",
       badgeBg: "bg-violet-100 text-violet-800 border-violet-300",
-      img: "/with_icon_3.jpg"
+      img: "/kidsgenlab58.jpg"
     },
     shock: {
       emoji: "⚡",
       title: "Avoid Easy Debt Traps",
       desc: "Prevent them from falling for 'Buy Now Pay Later' schemes, salary advance loops, and crippling consumer debt trap cycles.",
-      img: "/without_icon_3.jpg"
+      img: "/kidsgenlab50.jpg"
     }
   }
 ];
 
 const bookPages = [
   {
-    image: '/spend_impulsively.jpg',
+    image: '/kidsgenlab31.jpg',
     title: 'Spend Impulsively',
     desc: 'Instant Happiness, Long Term Regret. Smart choices today, better future tomorrow.'
   },
   {
-    image: '/avoid_budgeting.jpg',
+    image: '/kidsgenlab2.jpg',
     title: 'Avoid Budgeting',
     desc: 'No Plan, No Control, Only Stress. Budget today. Live better. Stress less.'
   },
   {
-    image: '/fear_investing.jpg',
+    image: '/kidsgenlab5.jpg',
     title: 'Fear Investing',
     desc: 'Don’t let fear rob your future. Start small. Start today. Your future self will thank you.'
   }
@@ -318,7 +318,7 @@ export default function StoryPage() {
         currency: createData.currency || 'INR',
         name: 'KidsGenLab',
         description: currentPkg.name,
-        image: '/kidsgenlab_logo_transparent.png',
+        image: '/kidsgenlab12.png',
         order_id: createData.order_id,
         prefill: {
           name: orderName.trim(),
@@ -516,17 +516,17 @@ export default function StoryPage() {
 
               <div className="marquee-track flex gap-4 sm:gap-6">
                 {[
-                  { img: '/money_problem_1.jpg', title: '1. Confusion About Money' },
-                  { img: '/money_problem_2.jpg', title: '2. Risk of Debt Trap' },
-                  { img: '/money_problem_3.jpg', title: '3. No Savings Habit' },
-                  { img: '/money_problem_4.jpg', title: '4. Impulsive Spending' },
-                  { img: '/money_problem_5.jpg', title: '5. Limited Future Opportunities' },
+                  { img: '/kidsgenlab16.jpg', title: '1. Confusion About Money' },
+                  { img: '/kidsgenlab17.jpg', title: '2. Risk of Debt Trap' },
+                  { img: '/kidsgenlab18.jpg', title: '3. No Savings Habit' },
+                  { img: '/kidsgenlab19.jpg', title: '4. Impulsive Spending' },
+                  { img: '/kidsgenlab20.jpg', title: '5. Limited Future Opportunities' },
 
-                  { img: '/money_problem_1.jpg', title: '1. Confusion About Money' },
-                  { img: '/money_problem_2.jpg', title: '2. Risk of Debt Trap' },
-                  { img: '/money_problem_3.jpg', title: '3. No Savings Habit' },
-                  { img: '/money_problem_4.jpg', title: '4. Impulsive Spending' },
-                  { img: '/money_problem_5.jpg', title: '5. Limited Future Opportunities' }
+                  { img: '/kidsgenlab16.jpg', title: '1. Confusion About Money' },
+                  { img: '/kidsgenlab17.jpg', title: '2. Risk of Debt Trap' },
+                  { img: '/kidsgenlab18.jpg', title: '3. No Savings Habit' },
+                  { img: '/kidsgenlab19.jpg', title: '4. Impulsive Spending' },
+                  { img: '/kidsgenlab20.jpg', title: '5. Limited Future Opportunities' }
                 ].map((card, idx) => (
                   <div
                     key={idx}
@@ -564,22 +564,22 @@ export default function StoryPage() {
           <div className="hidden md:grid grid-cols-2 lg:grid-cols-4 gap-6 mt-12">
             {[
               {
-                image: '/child_copying_parent.jpg',
+                image: '/kidsgenlab3.jpg',
                 title: 'Child Copying Parent',
                 desc: 'They watch you every day. They copy you in every way. You lead them today, they follow you tomorrow.'
               },
               {
-                image: '/spend_impulsively.jpg',
+                image: '/kidsgenlab31.jpg',
                 title: 'Spend Impulsively',
                 desc: 'Instant Happiness, Long Term Regret. Smart choices today, better future tomorrow.'
               },
               {
-                image: '/avoid_budgeting.jpg',
+                image: '/kidsgenlab2.jpg',
                 title: 'Avoid Budgeting',
                 desc: 'No Plan, No Control, Only Stress. Budget today. Live better. Stress less.'
               },
               {
-                image: '/fear_investing.jpg',
+                image: '/kidsgenlab5.jpg',
                 title: 'Fear Investing',
                 desc: 'Don’t let fear rob your future. Start small. Start today. Your future self will thank you.'
               }
@@ -599,7 +599,7 @@ export default function StoryPage() {
             {/* Main Hero Card (Child Copying Parent) */}
             <div className="bg-slate-50 p-5 rounded-3xl border-4 border-slate-900 shadow-[0_6px_0_#1e293b] text-center flex flex-col items-center space-y-3">
               <div className="w-full overflow-hidden rounded-2xl border-2 border-slate-900 shadow-sm bg-white">
-                <img src="/child_copying_parent.jpg" alt="Child Copying Parent" className="w-full h-auto object-contain" />
+                <img src="/kidsgenlab3.jpg" alt="Child Copying Parent" className="w-full h-auto object-contain" />
               </div>
               <h3 className="font-display font-bold text-lg text-slate-900 leading-snug">Child Copying Parent</h3>
               <p className="text-xs text-slate-600 leading-relaxed font-medium">
@@ -761,25 +761,25 @@ export default function StoryPage() {
               <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                 {[
                   {
-                    image: "/with_box_1.jpg",
+                    image: "/kidsgenlab52.jpg",
                     title: "1. Mindful Choices",
                     quote: '"My child evaluates wants vs. needs before asking."',
                     subtext: "Less friction, understanding limits."
                   },
                   {
-                    image: "/with_box_2.jpg",
+                    image: "/kidsgenlab53.jpg",
                     title: "2. Connected to Effort",
                     quote: '"My child understands value, effort, and earning."',
                     subtext: "Appreciating the real work behind every rupee."
                   },
                   {
-                    image: "/with_box_3.jpg",
+                    image: "/kidsgenlab54.jpg",
                     title: "3. Budgeting for Goals",
                     quote: '"My child allocates with clear purpose."',
                     subtext: "Patience and delayed gratification."
                   },
                   {
-                    image: "/with_box_4.jpg",
+                    image: "/kidsgenlab55.jpg",
                     title: "4. Confident Future",
                     quote: '"I have complete peace of mind about their future."',
                     subtext: "Real-world financial control, avoiding debt traps."
@@ -810,25 +810,25 @@ export default function StoryPage() {
               <div className="p-4 sm:p-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
                 {[
                   {
-                    image: "/without_box_1.jpg",
+                    image: "/kidsgenlab44.jpg",
                     title: "1. Constant Demands & Anger",
                     quote: '"My child demands things and gets angry when I say NO."',
                     subtext: "Meltdowns, tantrums, guilt."
                   },
                   {
-                    image: "/without_box_2.jpg",
+                    image: "/kidsgenlab45.jpg",
                     title: "2. Money From Nowhere",
                     quote: '"My child thinks money comes from nowhere."',
                     subtext: "No concept of effort or budgeting."
                   },
                   {
-                    image: "/without_box_3.jpg",
+                    image: "/kidsgenlab46.jpg",
                     title: "3. Immediate Spending",
                     quote: '"My child spends everything immediately."',
                     subtext: "No saving, no patience, no planning."
                   },
                   {
-                    image: "/without_box_4.jpg",
+                    image: "/kidsgenlab47.jpg",
                     title: "4. Future Worry",
                     quote: '"I\'m scared my child will become financially irresponsible."',
                     subtext: "Fearing debt, poor decisions, and dependency."
@@ -918,7 +918,7 @@ export default function StoryPage() {
             {/* Father (Left) */}
             <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-44 md:h-44 shrink-0 overflow-hidden rounded-2xl md:rounded-[2rem]">
               <img
-                src="/financial_dna_parents.jpg?v=1"
+                src="/kidsgenlab6.jpg?v=1"
                 alt="Father pointing"
                 className="w-full h-full object-cover"
                 style={{
@@ -940,7 +940,7 @@ export default function StoryPage() {
             {/* Mother (Right) */}
             <div className="relative w-16 h-16 sm:w-24 sm:h-24 md:w-44 md:h-44 shrink-0 overflow-hidden rounded-2xl md:rounded-[2rem]">
               <img
-                src="/financial_dna_parents.jpg?v=1"
+                src="/kidsgenlab6.jpg?v=1"
                 alt="Mother pointing"
                 className="w-full h-full object-cover"
                 style={{
@@ -1124,10 +1124,10 @@ export default function StoryPage() {
               <img
                 src={
                   selectedPackage === 'solo'
-                    ? '/product1.png.jpeg'
+                    ? '/kidsgenlab25.jpeg'
                     : selectedPackage === 'sibling'
-                    ? '/product2.png.jpeg'
-                    : '/product3.png.jpeg'
+                    ? '/kidsgenlab26.jpeg'
+                    : '/kidsgenlab27.jpeg'
                 }
                 alt={packages[selectedPackage].name}
                 className="w-full max-h-72 object-contain rounded-xl shadow-lg transform hover:scale-105 transition-transform"

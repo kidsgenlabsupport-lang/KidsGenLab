@@ -21,7 +21,7 @@ const defaultSettings = {
     autoCapture: true
   },
   whatsapp: {
-    supportNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "919876543210",
+    supportNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "918300297197",
     defaultMessage: "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
     autoNotificationEnabled: true,
     twilioEnabled: false

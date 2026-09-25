@@ -36,7 +36,7 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
             <div className="footer-trust-grid">
               {/* 1. 24/7 Support on WhatsApp */}
               <a
-                href="https://wa.me/919876543210?text=Hi%20KidsGen%20Lab!%20I%20have%20a%20question%20about%20the%20financial%20learning%20kit."
+                href="https://wa.me/918300297197?text=Hi%20KidsGen%20Lab!%20I%20have%20a%20question%20about%20the%20financial%20learning%20kits%20and%20orders."
                 target="_blank"
                 rel="noopener noreferrer"
                 className="trust-badge-card"

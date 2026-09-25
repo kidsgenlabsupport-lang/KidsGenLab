@@ -13,11 +13,11 @@ export const metadata: Metadata = {
   description: "A premium financial mastery bundle teaching strategic wealth, innovation, and leadership.",
   icons: {
     icon: [
-      { url: '/icon.png', type: 'image/png' },
+      { url: '/kidsgenlab9.png', type: 'image/png' },
       { url: '/favicon.ico', sizes: 'any' }
     ],
-    shortcut: '/icon.png',
-    apple: '/icon.png',
+    shortcut: '/kidsgenlab9.png',
+    apple: '/kidsgenlab9.png',
   },
 };
 

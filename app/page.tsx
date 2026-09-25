@@ -6,9 +6,11 @@ import Link from "next/link";
 import Script from "next/script";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
 import { ShoppingCart, RotateCcw, ArrowRight, ShieldCheck } from "lucide-react";
-import WhatsAppFloatButton from "../components/WhatsAppFloatButton";
+import dynamic from "next/dynamic";
+const WhatsAppFloatButton = dynamic(() => import("../components/WhatsAppFloatButton"), { ssr: false });
 import Footer from "../components/Footer";
 import { getActiveAffiliateRef } from "../components/AffiliateTracker";
+import GoogleTranslate from "../components/GoogleTranslate";
 
 const JumpingTopSiyaCoin = ({ size, onClick, style = {} }: { size?: number; onClick?: (e: React.MouseEvent) => void; style?: React.CSSProperties }) => (
   <span
@@ -30,7 +32,7 @@ const JumpingTopSiyaCoin = ({ size, onClick, style = {} }: { size?: number; onCl
   >
     <span className="settled-jumping-coin-inner">
       <img
-        src="/siya_coin_clean.png"
+        src="/kidsgenlab29.png"
         alt="Siya Coin"
         className="hero-top-siya-coin-img"
         style={{
@@ -59,7 +61,7 @@ const StaticSiyaCoin = ({ size, flipped = false, style = {} }: { size?: number; 
     }}
   >
     <img
-      src="/siya_coin_clean.png"
+      src="/kidsgenlab29.png"
       alt="Siya Coin"
       className="static-siya-coin-img"
       style={{
@@ -124,7 +126,7 @@ const SuperFlightSection = ({ className = "" }: { className?: string }) => (
               <span className="wave w3"></span>
             </div>
             <img
-              src="/anime_superman_sleep.png"
+              src="/kidsgenlab1.png"
               alt="Superhero Child Flying"
               className="super-child-anime super-child-flipped"
             />
@@ -137,7 +139,7 @@ const SuperFlightSection = ({ className = "" }: { className?: string }) => (
           <div className="super-speech-bubble">Hey, Supergirl!</div>
           <div className="super-child-scene">
             <img
-              src="/super_girl.png"
+              src="/kidsgenlab39.png"
               alt="Supergirl Child Flying"
               className="super-child-anime"
             />
@@ -582,7 +584,7 @@ const TradeFunSection = () => {
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: 'white', padding: '8px 28px', borderRadius: '50px', fontSize: '1.6rem', fontWeight: 900, marginBottom: '8px', boxShadow: '0 8px 20px rgba(239,68,68,0.25)' }}
           >
-            <span>Let&apos;s Trade!</span>
+            <span>Trading Fun</span>
             <StaticSiyaCoin />
           </motion.h2>
           <p style={{ color: '#475569', fontSize: '1.05rem', fontWeight: 600, margin: 0 }}>Trading is swapping what you have for what you want!</p>
@@ -696,7 +698,7 @@ const TradeFunSection = () => {
             margin: '0 auto'
           }}>
           <img 
-            src="/real_handshake.jpg" 
+            src="/kidsgenlab28.jpg" 
             alt="Value Exchange" 
             style={{ 
               width: isMobile ? '60px' : '75px', 
@@ -1090,7 +1092,7 @@ export default function Home() {
         currency: createData.currency || 'INR',
         name: 'KidsGenLab',
         description: currentPkg.name,
-        image: '/kidsgenlab_logo_transparent.png',
+        image: '/kidsgenlab12.png',
         order_id: createData.order_id,
         prefill: {
           name: orderName.trim(),
@@ -1242,106 +1244,28 @@ export default function Home() {
     return () => observer.disconnect();
   }, []);
 
-  const translations = {
-    en: {
-      budget: "Budget",
-      fortune: "Fortune",
-      depreciation: "Depreciation",
-      trading: "Trading",
-      superpower: "Superpower",
-      letsPlay: "Let's Play",
-      futureFortuneBuilder: "Future Fortune Builder",
-      makeKidsMillionaire: "Make your kids Millionaire or Billionaire.",
-      pathToWealthKid: "The Path to WealthKid",
-      blueprintDesc: "Craft a custom financial blueprint for your child's future. Enter a few details to visualize their journey to wealth.",
-      childAgeLabel: "CHILD'S CURRENT AGE",
-      monthlyInvestLabel: "MONTHLY INVESTMENT",
-      selectAmbition: "🎯 SELECT YOUR WEALTH AMBITION",
-      millionaireGoal: "Millionaire Goal",
-      billionaireGoal: "Billionaire Goal",
-      generateMap: "GENERATE WEALTH MAP",
-      depTitle: "Depreciation",
-      depSubtitle: "Things lose value over time. Watch it happen live!",
-      go: "Go",
-      reset: "Reset & Play Again",
-      split: "Split",
-      budgetBuddy: "Budget Buddy",
-      justEnterAmount: "Just enter the amount and watch it split!"
-    },
-    hi: {
-      budget: "बजट",
-      fortune: "भविष्य",
-      depreciation: "मूल्यह्रास",
-      trading: "व्यापार",
-      superpower: "महाशक्ति",
-      letsPlay: "चलो खेलें",
-      futureFortuneBuilder: "भविष्य का खजाना निर्माता",
-      makeKidsMillionaire: "अपने बच्चों को करोड़पति या अरबपति बनाएं।",
-      pathToWealthKid: "वेल्थकिड का मार्ग",
-      blueprintDesc: "अपने बच्चे के भविष्य के लिए एक व्यक्तिगत वित्तीय खाका तैयार करें। उनके अमीर बनने की यात्रा को देखने के लिए कुछ विवरण दर्ज करें।",
-      childAgeLabel: "बच्चे की वर्तमान उम्र",
-      monthlyInvestLabel: "मासिक निवेश",
-      selectAmbition: "🎯 अपनी संपत्ति की आकांक्षा चुनें",
-      millionaireGoal: "करोड़पति लक्ष्य",
-      billionaireGoal: "अरबपति लक्ष्य",
-      generateMap: "वेल्थ मैप बनाएं",
-      depTitle: "मूल्यह्रास (डेप्रिसिएशन)",
-      depSubtitle: "समय के साथ चीजें अपनी कीमत खो देती हैं। इसे लाइव देखें!",
-      go: "शुरू करें",
-      reset: "रीसेट करें और फिर से खेलें",
-      split: "विभाजित करें",
-      budgetBuddy: "बजट बडी",
-      justEnterAmount: "बस राशि दर्ज करें और इसे विभाजित होते देखें!"
-    },
-    ta: {
-      budget: "பட்ஜெட்",
-      fortune: "செல்வம்",
-      depreciation: "மதிப்பிறக்கம்",
-      trading: "வர்த்தகம்",
-      superpower: "சூப்பர் பவர்",
-      letsPlay: "விளையாடுவோம்",
-      futureFortuneBuilder: "எதிர்கால செல்வத்தை உருவாக்குபவர்",
-      makeKidsMillionaire: "உங்கள் குழந்தைகளை மில்லியனர் அல்லது பில்லியனர் ஆக்குங்கள்.",
-      pathToWealthKid: "வெல்த்கிட் நோக்கிய பாதை",
-      blueprintDesc: "உங்கள் குழந்தையின் எதிர்காலத்திற்கான தனிப்பயன் நிதி திட்டத்தை உருவாக்குங்கள். அவர்கள் செல்வத்தை அடையும் பயணத்தை காண சில விவரங்களை உள்ளிடவும்.",
-      childAgeLabel: "குழந்தையின் தற்போதைய வயது",
-      monthlyInvestLabel: "மாதாந்திர முதலீடு",
-      selectAmbition: "🎯 உங்கள் செல்வ இலக்கை தேர்வு செய்யவும்",
-      millionaireGoal: "மில்லியனர் இலக்கு",
-      billionaireGoal: "பில்லியனர் இலக்கு",
-      generateMap: "வெல்த் மேப் உருவாக்கவும்",
-      depTitle: "மதிப்பிறக்கம் (தேய்மானம்)",
-      depSubtitle: "காலப்போக்கில் பொருட்கள் மதிப்பை இழக்கின்றன. அதை நேரலையில் பாருங்கள்!",
-      go: "செல்",
-      reset: "மீட்டமைத்து மீண்டும் விளையாடு",
-      split: "பிரி",
-      budgetBuddy: "பட்ஜெட் பட்டி",
-      justEnterAmount: "தொகையை உள்ளிட்டு அது பிரிப்பதைப் பாருங்கள்!"
-    }
-  };
 
-  const t = translations[language];
 
   const needsList = [
     {
       name: language === 'hi' ? 'घर (Shelter)' : language === 'ta' ? 'வீடு (Shelter)' : 'House (Shelter)',
       desc: language === 'hi' ? 'रहने और सोने के लिए एक सुरक्षित जगह।' : language === 'ta' ? 'வாழவும் உறங்கவும் ஒரு பாதுகாப்பான இடம்.' : 'A safe place to live and sleep.',
-      img: '/needs_home_cartoon.jpg',
+      img: '/kidsgenlab24.jpg',
     },
     {
       name: language === 'hi' ? 'भोजन (Food)' : language === 'ta' ? 'உணவு (Food)' : 'Healthy Food',
       desc: language === 'hi' ? 'मजबूत बनने के लिए स्वस्थ भोजन और फल।' : language === 'ta' ? 'ஆரோக்கியமாக வளர சத்தான உணவுகள்.' : 'Healthy meals and fruits to grow strong.',
-      img: '/needs_food_cartoon.jpg',
+      img: '/kidsgenlab23.jpg',
     },
     {
       name: language === 'hi' ? 'कपड़े (Clothing)' : language === 'ta' ? 'ஆடை (Clothing)' : 'Clothes (Clothing)',
       desc: language === 'hi' ? 'आपको गर्म और सुरक्षित रखने के लिए।' : language === 'ta' ? 'உங்களை வெப்பமாகவும் பாதுகாப்பாகவும் வைத்திருக்க.' : 'To keep you warm and protected.',
-      img: '/needs_clothes_cartoon.jpg',
+      img: '/kidsgenlab22.jpg',
     },
     {
       name: language === 'hi' ? 'शिक्षा (Education)' : language === 'ta' ? 'கல்வி (Education)' : 'Books & Study',
       desc: language === 'hi' ? 'नया सीखने और आगे बढ़ने के लिए किताबें।' : language === 'ta' ? 'புதிய விஷயங்களை கற்றுக்கொள்ள புத்தகங்கள்.' : 'Books and study materials to learn and grow.',
-      img: '/needs_books_cartoon.jpg',
+      img: '/kidsgenlab21.jpg',
     }
   ];
 
@@ -1349,22 +1273,22 @@ export default function Home() {
     {
       name: language === 'hi' ? 'आइसक्रीम' : language === 'ta' ? 'ஐஸ்கிரீம்' : 'Ice Cream',
       desc: language === 'hi' ? 'खाने के बाद एक मीठी और स्वादिष्ट ट्रीट।' : language === 'ta' ? 'சாப்பாட்டிற்கு பின் ஒரு இனிமையான சுவை.' : 'A sweet and delicious treat for dessert.',
-      img: '/wants_icecream_cartoon.jpg',
+      img: '/kidsgenlab42.jpg',
     },
     {
       name: language === 'hi' ? 'खिलौने (Toys)' : language === 'ta' ? 'பொம்மைகள்' : 'Toys',
       desc: language === 'hi' ? 'दोस्तों के साथ खेलने के लिए मजेदार चीजें।' : language === 'ta' ? 'நண்பர்களுடன் விளையாட வேடிக்கையான பொம்மைகள்.' : 'Fun things to play with friends.',
-      img: '/wants_toy_cartoon.jpg',
+      img: '/kidsgenlab43.jpg',
     },
     {
       name: language === 'hi' ? 'वीडियो गेम्स' : language === 'ta' ? 'வீடியோ கேம்ஸ்' : 'Video Games',
       desc: language === 'hi' ? 'शानदार डिजिटल रोमांच और खेल।' : language === 'ta' ? 'சுவாரஸ்யமான கணினி விளையாட்டுகள்.' : 'Cool digital adventures and gameplay.',
-      img: '/wants_game_cartoon.jpg',
+      img: '/kidsgenlab41.jpg',
     },
     {
       name: language === 'hi' ? 'साइकिल' : language === 'ta' ? 'மிதிவண்டி' : 'Bicycle',
       desc: language === 'hi' ? 'पार्क में सवारी करने के लिए एक शानदार साइकिल।' : language === 'ta' ? 'பூங்காவில் ஓட்டி மகிழ ஒரு மிதிவண்டி.' : 'A shiny new bicycle to ride in the park.',
-      img: '/wants_bike_cartoon.jpg',
+      img: '/kidsgenlab40.jpg',
     }
   ];
 
@@ -1652,7 +1576,7 @@ export default function Home() {
             }}
           >
             <img
-              src="/kidsgenlab_logo_transparent.png"
+              src="/kidsgenlab12.png"
               alt="KidsGenLab"
               className="header-logo-img"
               style={{
@@ -1752,6 +1676,7 @@ export default function Home() {
               <span>Let&apos;s Play</span>
               <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s ease', transform: showPlayMenu ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
             </button>
+            <GoogleTranslate />
           </nav>
         </div>
       </header>
@@ -1865,9 +1790,9 @@ export default function Home() {
           onTouchEnd={onProductTouchEnd}
         >
           <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-            <img src="/product1.png.jpeg" alt="Starter Saver Edition (1,199)" className="slider-slide" />
-            <img src="/product2.png.jpeg" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
-            <img src="/product3.png.jpeg" alt="Family Champions Bundle (2,999)" className="slider-slide" />
+            <img src="/kidsgenlab25.jpeg" alt="Starter Saver Edition (1,199)" className="slider-slide" />
+            <img src="/kidsgenlab26.jpeg" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
+            <img src="/kidsgenlab27.jpeg" alt="Family Champions Bundle (2,999)" className="slider-slide" />
           </div>
 
           <button suppressHydrationWarning={true} className="slider-btn prev-btn" onClick={prevSlide} aria-label="Previous image">❮</button>
@@ -2060,7 +1985,7 @@ export default function Home() {
       <section className="future-skills container">
         <div className="future-skills-grid">
           <div className="future-image">
-            <img src="/kids_gen_lab_box.jpg" alt="KidsGenLab - My Kids Know Money" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 15px 30px rgba(0,0,0,0.1)' }} />
+            <img src="/kidsgenlab14.jpg" alt="KidsGenLab - My Kids Know Money" style={{ width: '100%', borderRadius: '20px', boxShadow: '0 15px 30px rgba(0,0,0,0.1)' }} />
           </div>
           <div className="future-content">
             <h2><StaticSiyaCoin size={44} flipped={true} /> Master the Game of Money — Tactical Skills for the Real World</h2>
@@ -2709,7 +2634,7 @@ export default function Home() {
                 width: '100%',
                 marginBottom: '14px',
               }}>
-                <img src="/financial_dna_realistic.jpg" alt="Financial DNA realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '14px' }} />
+                <img src="/kidsgenlab7.jpg" alt="Financial DNA realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '14px' }} />
               </div>
               <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary-teal)', marginBottom: '8px' }}>Financial DNA</h3>
               <p style={{ fontSize: '0.98rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>Children don't fail financially. They copy silently. Your spending, budgeting, debt, and risk habits become their financial blueprint.</p>
@@ -2733,7 +2658,7 @@ export default function Home() {
                 width: '100%',
                 marginBottom: '14px',
               }}>
-                <img src="/emi_trap_realistic.jpg" alt="The EMI Trap realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '16px' }} />
+                <img src="/kidsgenlab4.jpg" alt="The EMI Trap realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '16px' }} />
               </div>
               <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary-teal)', marginBottom: '8px' }}>The EMI Trap</h3>
               <p style={{ fontSize: '0.98rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>EMI → Stress → Job Trap → No Risk → No Growth. Without debt awareness early on, children fall into cycles that limit their life choices.</p>
@@ -2757,7 +2682,7 @@ export default function Home() {
                 width: '100%',
                 marginBottom: '14px',
               }}>
-                <img src="/financial_shock_realistic.jpg" alt="The 22-Year Shock realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '16px' }} />
+                <img src="/kidsgenlab8.jpg" alt="The 22-Year Shock realistic photo" style={{ width: '100%', height: 'auto', borderRadius: '16px' }} />
               </div>
               <h3 style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--primary-teal)', marginBottom: '8px' }}>The 22-Year Shock</h3>
               <p style={{ fontSize: '0.98rem', color: '#475569', lineHeight: 1.5, margin: 0 }}>No financial education until 22, then suddenly: Rent, Bills, Loans, Taxes. This sudden responsibility creates deep anxiety and fear.</p>
@@ -2925,13 +2850,13 @@ export default function Home() {
                 aria-hidden={groupNum === 2 ? true : undefined}
               >
                 {[
-                  { color: 'gold', icon: '/sticker_first_earner.jpg', title: 'First Earner', desc: 'Learn the pride of earning your very first rupee' },
-                  { color: 'red', icon: '/sticker_goal_achiever.jpg', title: 'Goal Achiever', desc: 'Set targets, aim high, and hit your money goals' },
-                  { color: 'green', icon: '/sticker_budget_buddy.jpg', title: 'Budget Buddy', desc: 'Master the art of planning where every rupee goes' },
-                  { color: 'blue', icon: '/sticker_investor_mindset.jpg', title: 'Investor Mindset', desc: 'Think long-term and make your money grow' },
-                  { color: 'purple', icon: '/sticker_inflation_awareness.jpg', title: 'Inflation Awareness', desc: 'Understand why prices rise and how to stay ahead' },
-                  { color: 'orange', icon: '/sticker_smart_spender.jpg', title: 'Smart Spender', desc: 'Know the difference between needs and wants' },
-                  { color: 'teal', icon: '/sticker_business_brain.jpg', title: 'Business Brain', desc: 'Think like an entrepreneur and spot opportunities' }
+                  { color: 'gold', icon: '/kidsgenlab34.jpg', title: 'First Earner', desc: 'Learn the pride of earning your very first rupee' },
+                  { color: 'red', icon: '/kidsgenlab35.jpg', title: 'Goal Achiever', desc: 'Set targets, aim high, and hit your money goals' },
+                  { color: 'green', icon: '/kidsgenlab32.jpg', title: 'Budget Buddy', desc: 'Master the art of planning where every rupee goes' },
+                  { color: 'blue', icon: '/kidsgenlab37.jpg', title: 'Investor Mindset', desc: 'Think long-term and make your money grow' },
+                  { color: 'purple', icon: '/kidsgenlab36.jpg', title: 'Inflation Awareness', desc: 'Understand why prices rise and how to stay ahead' },
+                  { color: 'orange', icon: '/kidsgenlab38.jpg', title: 'Smart Spender', desc: 'Know the difference between needs and wants' },
+                  { color: 'teal', icon: '/kidsgenlab33.jpg', title: 'Business Brain', desc: 'Think like an entrepreneur and spot opportunities' }
                 ].map((s, i) => (
                   <div key={i} className="magic-sticker-float">
                     <div className={`sticker-glow sticker-${s.color}`}></div>
@@ -3017,9 +2942,9 @@ export default function Home() {
       <div 
         className={`mobile-sticky-footer ${isMainCtaVisible ? 'hide-buy-btn' : 'with-buy-bar'}`}
         style={{
-          background: isMainCtaVisible ? 'transparent' : 'rgba(255, 255, 255, 0.96)',
-          boxShadow: isMainCtaVisible ? 'none' : '0 -4px 20px rgba(0,0,0,0.12)',
-          borderTop: isMainCtaVisible ? 'none' : '1px solid rgba(0,0,0,0.08)',
+          background: isMainCtaVisible ? 'rgba(255, 255, 255, 0)' : 'rgba(255, 255, 255, 0.96)',
+          boxShadow: isMainCtaVisible ? '0 -4px 20px rgba(0,0,0,0)' : '0 -4px 20px rgba(0,0,0,0.12)',
+          borderTop: isMainCtaVisible ? '1px solid rgba(0,0,0,0)' : '1px solid rgba(0,0,0,0.08)',
           pointerEvents: isMainCtaVisible ? 'none' : 'auto',
           justifyContent: isMainCtaVisible ? 'flex-end' : 'center',
           transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)'
@@ -3042,7 +2967,7 @@ export default function Home() {
           </Link>
         )}
         <a
-          href="https://wa.me/919876543210?text=Hi%20KidsGen%20Lab!%20I%20have%20a%20question%20about%20the%20financial%20learning%20kit."
+          href="https://wa.me/918300297197?text=Hi%20KidsGen%20Lab,%20I%20would%20like%20to%20chat%20with%20you!"
           target="_blank"
           rel="noopener noreferrer"
           aria-label="Chat on WhatsApp"
@@ -3183,7 +3108,7 @@ export default function Home() {
             }}
           >
             <img
-              src="/siya_coin_clean.png"
+              src="/kidsgenlab29.png"
               alt="Flying Siya Coin"
               style={{
                 width: "56px",

@@ -51,9 +51,16 @@ export async function initDatabase() {
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL,
+      css_style TEXT,
       updated_at TEXT DEFAULT (datetime('now'))
     )
   `);
+
+  try {
+    await db.execute('ALTER TABLE settings ADD COLUMN css_style TEXT');
+  } catch (e) {
+    // Column might already exist
+  }
 
   // 3. Create Affiliate Logs Table
   await db.execute(`
