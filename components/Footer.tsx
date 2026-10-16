@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ShieldCheck, Truck, MessageCircle } from "lucide-react";
+import { ShieldCheck, Truck, MessageCircle, Phone, Mail } from "lucide-react";
 
 interface FooterProps {
   showTrustBadges?: boolean;
@@ -10,7 +10,6 @@ interface FooterProps {
 }
 
 export default function Footer({ showTrustBadges = true, showAllRights = false }: FooterProps) {
-
   return (
     <>
       <footer
@@ -35,10 +34,7 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
           >
             <div className="footer-trust-grid">
               {/* 1. 24/7 Support on WhatsApp */}
-              <a
-                href="https://wa.me/918300297197?text=Hi%20KidsGen%20Lab!%20I%20have%20a%20question%20about%20the%20financial%20learning%20kits%20and%20orders."
-                target="_blank"
-                rel="noopener noreferrer"
+              <div
                 className="trust-badge-card"
                 style={{ textDecoration: "none" }}
               >
@@ -70,7 +66,7 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
                     Quick resolution &amp; parent assistance
                   </div>
                 </div>
-              </a>
+              </div>
 
               {/* 2. Within 3 to 7 Days Delivery */}
               <div className="trust-badge-card">
@@ -151,203 +147,335 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
           style={{
             maxWidth: "1140px",
             margin: "0 auto",
-            padding: "20px 20px 24px"
+            padding: "36px 20px 28px"
           }}
         >
+          {/* Main Footer Columns Grid */}
+          <div className="footer-columns-grid">
+            
+            {/* Column 1: Brand & Bio & Social Media */}
+            <div className="footer-col footer-col-brand">
+              <Link href="/" style={{ display: "inline-flex", alignItems: "center", textDecoration: "none", gap: "10px", marginBottom: "14px" }}>
+                <img
+                  src="/kidsgenlab12.png"
+                  alt="KIDSGENLAB Logo"
+                  style={{
+                    height: "42px",
+                    width: "auto",
+                    objectFit: "contain",
+                    display: "block"
+                  }}
+                />
+              </Link>
+              <p
+                style={{
+                  fontSize: "0.88rem",
+                  color: "#64748b",
+                  lineHeight: "1.6",
+                  margin: "0 0 18px 0",
+                  maxWidth: "360px"
+                }}
+              >
+                Empowering children with essential financial intelligence, money wisdom, and lifelong smart saving habits.
+              </p>
+
+              {/* Social Icons */}
+              <div>
+                <div style={{ fontSize: "0.78rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: "#94a3b8", marginBottom: "10px" }}>
+                  Follow Us
+                </div>
+                <div
+                  className="footer-social-row"
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    flexWrap: "nowrap"
+                  }}
+                >
+                  {/* Instagram */}
+                  <a
+                    href="https://www.instagram.com/kidsgenlab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Instagram"
+                    title="Follow KidsGenLab on Instagram"
+                    className="social-icon-btn"
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "12px",
+                      backgroundColor: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#0f172a",
+                      padding: "0",
+                      boxSizing: "border-box",
+                      transition: "all 0.15s ease",
+                      textDecoration: "none",
+                      flexShrink: 0,
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#000000";
+                      e.currentTarget.style.borderColor = "#000000";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.stroke = "#ffffff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.stroke = "#0f172a";
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", flexShrink: 0, transition: "stroke 0.15s ease" }}>
+                      <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
+                      <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
+                      <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
+                    </svg>
+                  </a>
+
+                  {/* Facebook */}
+                  <a
+                    href="https://www.facebook.com/kidsgenlab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="Facebook"
+                    title="Follow KidsGenLab on Facebook"
+                    className="social-icon-btn"
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "12px",
+                      backgroundColor: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#0f172a",
+                      padding: "0",
+                      boxSizing: "border-box",
+                      transition: "all 0.15s ease",
+                      textDecoration: "none",
+                      flexShrink: 0,
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#000000";
+                      e.currentTarget.style.borderColor = "#000000";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.fill = "#ffffff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.fill = "#0f172a";
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#0f172a" style={{ display: "block", flexShrink: 0, transition: "fill 0.15s ease" }}>
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                  </a>
+
+                  {/* LinkedIn */}
+                  <a
+                    href="https://www.linkedin.com/company/kidsgenlab"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label="LinkedIn"
+                    title="Connect with KidsGenLab on LinkedIn"
+                    className="social-icon-btn"
+                    style={{
+                      width: "42px",
+                      height: "42px",
+                      borderRadius: "12px",
+                      backgroundColor: "#ffffff",
+                      border: "1.5px solid #cbd5e1",
+                      display: "inline-flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "#0f172a",
+                      padding: "0",
+                      boxSizing: "border-box",
+                      transition: "all 0.15s ease",
+                      textDecoration: "none",
+                      flexShrink: 0,
+                      boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = "#000000";
+                      e.currentTarget.style.borderColor = "#000000";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.fill = "#ffffff";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = "#ffffff";
+                      e.currentTarget.style.borderColor = "#cbd5e1";
+                      const svg = e.currentTarget.querySelector('svg');
+                      if (svg) svg.style.fill = "#0f172a";
+                    }}
+                  >
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#0f172a" style={{ display: "block", flexShrink: 0, transition: "fill 0.15s ease" }}>
+                      <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
+                    </svg>
+                  </a>
+                </div>
+              </div>
+            </div>
+
+            {/* Column 2: KIDSGENLAB Registered Office & Contact */}
+            <div className="footer-col footer-col-address" style={{ maxWidth: "480px", width: "100%" }}>
+              <div
+                className="footer-address-card"
+                style={{
+                  backgroundColor: "#f8fafc",
+                  border: "1.5px solid #e2e8f0",
+                  borderRadius: "16px",
+                  padding: "18px 20px",
+                  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.03)"
+                }}
+              >
+                {/* Brand Entity Name */}
+                <div
+                  style={{
+                    marginBottom: "12px",
+                    paddingBottom: "8px",
+                    borderBottom: "1px solid #e2e8f0"
+                  }}
+                >
+                  <span
+                    style={{
+                      fontWeight: 900,
+                      fontSize: "1rem",
+                      color: "#0f172a",
+                      letterSpacing: "0.04em"
+                    }}
+                  >
+                    KIDSGENLAB
+                  </span>
+                </div>
+
+                {/* Exact Requested Address */}
+                <div style={{ marginBottom: "14px" }}>
+                  <address
+                    style={{
+                      fontStyle: "normal",
+                      fontSize: "0.86rem",
+                      color: "#334155",
+                      lineHeight: "1.6",
+                      margin: 0
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>
+                      14a, ADHILAKSHMI NAGAR, MATHULAMPETT
+                    </div>
+                    <div>Block- 1, MARRIYAMMAN KOVIL MATHULAMPETT</div>
+                    <div>KUMBAKONAM, TAMIL NADU</div>
+                    <div style={{ fontWeight: 700, color: "#0f172a" }}>612001, India</div>
+                  </address>
+                </div>
+
+                {/* Phone & Email (Clean direct contact without small WhatsApp icon or verified badge) */}
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                    paddingTop: "12px",
+                    borderTop: "1px dashed #cbd5e1"
+                  }}
+                >
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        backgroundColor: "#ecfdf5",
+                        color: "#16a34a",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}
+                    >
+                      <Phone size={14} />
+                    </div>
+                    <a
+                      href="tel:+918300297197"
+                      style={{
+                        fontSize: "0.92rem",
+                        fontWeight: 800,
+                        color: "#0f172a",
+                        textDecoration: "none",
+                        letterSpacing: "0.02em"
+                      }}
+                      title="Call KidsGenLab customer care"
+                    >
+                      +918300297197
+                    </a>
+                  </div>
+
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      fontSize: "0.84rem"
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: "28px",
+                        height: "28px",
+                        borderRadius: "8px",
+                        backgroundColor: "#f1f5f9",
+                        color: "#64748b",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        flexShrink: 0
+                      }}
+                    >
+                      <Mail size={14} />
+                    </div>
+                    <a
+                      href="mailto:kidsgenlab@gmail.com"
+                      style={{
+                        color: "#64748b",
+                        textDecoration: "none",
+                        fontWeight: 500
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.color = "#0f172a"; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.color = "#64748b"; }}
+                    >
+                      kidsgenlab@gmail.com
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+
+          {/* Bottom Divider & Copyright Strip */}
           <div
-            className="footer-flex-row"
             style={{
+              borderTop: "1px solid #f1f5f9",
+              marginTop: "28px",
+              paddingTop: "20px",
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
               flexWrap: "wrap",
-              gap: "16px"
+              gap: "12px"
             }}
+            className="footer-bottom-bar"
           >
-
-
-            {/* Imprinted Monochrome Social Media Icons */}
-            <div
-              className="footer-social-row"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "12px",
-                flexWrap: "nowrap",
-                margin: "4px 0"
-              }}
-            >
-              {/* Instagram */}
-              <a
-                href="https://www.instagram.com/kidsgenlab"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Instagram"
-                title="Follow KidsGen Lab on Instagram"
-                className="social-icon-btn"
-                style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "12px",
-                  backgroundColor: "#ffffff",
-                  border: "1.5px solid #cbd5e1",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0f172a",
-                  padding: "0",
-                  boxSizing: "border-box",
-                  transition: "all 0.15s ease",
-                  textDecoration: "none",
-                  flexShrink: 0,
-                  boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#000000";
-                  e.currentTarget.style.borderColor = "#000000";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.stroke = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ffffff";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.stroke = "#0f172a";
-                }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#0f172a" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block", flexShrink: 0, transition: "stroke 0.15s ease" }}>
-                  <rect width="20" height="20" x="2" y="2" rx="5" ry="5"></rect>
-                  <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"></path>
-                  <line x1="17.5" x2="17.51" y1="6.5" y2="6.5"></line>
-                </svg>
-              </a>
-
-              {/* Facebook */}
-              <a
-                href="https://www.facebook.com/kidsgenlab"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Facebook"
-                title="Follow KidsGen Lab on Facebook"
-                className="social-icon-btn"
-                style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "12px",
-                  backgroundColor: "#ffffff",
-                  border: "1.5px solid #cbd5e1",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0f172a",
-                  padding: "0",
-                  boxSizing: "border-box",
-                  transition: "all 0.15s ease",
-                  textDecoration: "none",
-                  flexShrink: 0,
-                  boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#000000";
-                  e.currentTarget.style.borderColor = "#000000";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.fill = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ffffff";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.fill = "#0f172a";
-                }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="#0f172a" style={{ display: "block", flexShrink: 0, transition: "fill 0.15s ease" }}>
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                </svg>
-              </a>
-
-              {/* LinkedIn */}
-              <a
-                href="https://www.linkedin.com/company/kidsgenlab"
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="LinkedIn"
-                title="Connect with KidsGen Lab on LinkedIn"
-                className="social-icon-btn"
-                style={{
-                  width: "42px",
-                  height: "42px",
-                  borderRadius: "12px",
-                  backgroundColor: "#ffffff",
-                  border: "1.5px solid #cbd5e1",
-                  display: "inline-flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  color: "#0f172a",
-                  padding: "0",
-                  boxSizing: "border-box",
-                  transition: "all 0.15s ease",
-                  textDecoration: "none",
-                  flexShrink: 0,
-                  boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.backgroundColor = "#000000";
-                  e.currentTarget.style.borderColor = "#000000";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.fill = "#ffffff";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.backgroundColor = "#ffffff";
-                  e.currentTarget.style.borderColor = "#cbd5e1";
-                  const svg = e.currentTarget.querySelector('svg');
-                  if (svg) svg.style.fill = "#0f172a";
-                }}
-              >
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="#0f172a" style={{ display: "block", flexShrink: 0, transition: "fill 0.15s ease" }}>
-                  <path d="M19 0h-14c-2.761 0-5 2.239-5 5v14c0 2.761 2.239 5 5 5h14c2.762 0 5-2.239 5-5v-14c0-2.761-2.238-5-5-5zm-11 19h-3v-11h3v11zm-1.5-12.268c-.966 0-1.75-.79-1.75-1.764s.784-1.764 1.75-1.764 1.75.79 1.75 1.764-.783 1.764-1.75 1.764zm13.5 12.268h-3v-5.604c0-3.368-4-3.113-4 0v5.604h-3v-11h3v1.765c1.396-2.586 7-2.777 7 2.476v6.759z"/>
-                </svg>
-              </a>
-            </div>
-
-            {/* Legal Links */}
-            <div
-              className="footer-legal-links"
-              style={{
-                display: "flex",
-                alignItems: "center",
-                flexWrap: "wrap",
-                gap: "12px",
-                fontSize: "0.85rem"
-              }}
-            >
-              <Link
-                href="/privacy"
-                style={{
-                  color: "#64748b",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  fontSize: "0.85rem",
-                  transition: "color 0.15s ease"
-                }}
-              >
-                Privacy Policy
-              </Link>
-              <span style={{ color: "#cbd5e1" }}>•</span>
-              <Link
-                href="/privacy"
-                style={{
-                  color: "#64748b",
-                  fontWeight: 600,
-                  textDecoration: "none",
-                  fontSize: "0.85rem",
-                  transition: "color 0.15s ease"
-                }}
-              >
-                Terms &amp; Conditions
-              </Link>
-            </div>
-
             {/* Copyright */}
             <div
               className="footer-copyright"
@@ -358,8 +486,44 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
               }}
             >
               <span suppressHydrationWarning={true}>
-                © {new Date().getFullYear()} KidsGen Lab{showAllRights ? ". All rights reserved." : "."}
+                © {new Date().getFullYear()} KIDSGENLAB. All rights reserved.
               </span>
+            </div>
+
+            {/* Quick Policy links */}
+            <div
+              className="footer-legal-links"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "12px",
+                fontSize: "0.80rem"
+              }}
+            >
+              <Link
+                href="/privacy"
+                style={{
+                  color: "#64748b",
+                  fontWeight: 700,
+                  textDecoration: "none"
+                }}
+                className="footer-policy-link"
+              >
+                Privacy Policy
+              </Link>
+              <span style={{ color: "#cbd5e1" }}>•</span>
+              <Link
+                href="/privacy"
+                style={{
+                  color: "#64748b",
+                  fontWeight: 700,
+                  textDecoration: "none"
+                }}
+                className="footer-policy-link"
+              >
+                Terms &amp; Conditions
+              </Link>
             </div>
           </div>
         </div>

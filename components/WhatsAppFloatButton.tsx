@@ -15,7 +15,7 @@ export default function WhatsAppFloatButton() {
   const targetNumber = WHATSAPP_CONFIG.companyNumber || "918300297197";
 
   const handleWhatsAppClick = () => {
-    const defaultMessage = "Hi KidsGen Lab, I would like to chat with you!";
+    const defaultMessage = "Hi KidsGenLab, I would like to chat with you!";
     const url = `https://wa.me/${targetNumber}?text=${encodeURIComponent(defaultMessage)}`;
     window.open(url, "_blank");
   };
@@ -48,7 +48,7 @@ export default function WhatsAppFloatButton() {
         whileHover={{ scale: 1.08 }}
         whileTap={{ scale: 0.95 }}
         onClick={handleWhatsAppClick}
-        aria-label="Chat with KidsGen Lab on WhatsApp"
+        aria-label="Chat with KidsGenLab on WhatsApp"
         style={{
           width: "62px",
           height: "62px",

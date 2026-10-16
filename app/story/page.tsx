@@ -17,7 +17,9 @@ import {
   Leaf,
   Compass,
   ArrowLeft,
-  HeartHandshake
+  HeartHandshake,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 import Footer from '../../components/Footer';
 import VisitorTracker from '../../components/VisitorTracker';
@@ -124,10 +126,12 @@ const bookPages = [
 
 export default function StoryPage() {
 
-
-
   // 3. Two Futures Crossroads State
   const [selectedPath, setSelectedPath] = useState<'saver' | 'no-guidance'>('saver');
+
+  // Video slider state
+  const [activeVideoIndex, setActiveVideoIndex] = useState(0);
+  const videoReels = ["reelv1.mp4", "reelv2.mp4", "reelv3.mp4"];
 
   // Book pages index state for mobile response
   const [activeBookPage, setActiveBookPage] = useState<number>(0);
@@ -422,12 +426,13 @@ export default function StoryPage() {
       minHeight: '100vh',
       fontFamily: "'Outfit', 'Plus Jakarta Sans', sans-serif",
       position: 'relative',
-      overflowX: 'hidden'
+      overflowX: 'hidden',
+      transition: 'opacity 0.5s ease-in-out'
     }}>
 
-      {/* Tailwind CSS & Canvas Confetti Scripts */}
-      <Script id="tailwind-cdn" src="https://cdn.tailwindcss.com" strategy="afterInteractive" />
+      {/* Canvas Confetti Scripts */}
       <Script
+
         id="confetti-cdn"
         src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"
         strategy="afterInteractive"
@@ -478,6 +483,136 @@ export default function StoryPage() {
 
       {/* HERO SECTION */}
       <section className="relative pt-8 pb-12 overflow-hidden">
+        {/* Intro Video Section */}
+        <div className="w-full max-w-6xl mx-auto px-4 mb-12 relative z-20">
+          
+          {/* Desktop View: 3-column Grid (1:1 aspect) */}
+          <div className="hidden md:grid grid-cols-3 gap-6">
+            {videoReels.map((video, idx) => (
+              <div key={idx} className="relative aspect-square rounded-[24px] overflow-hidden bg-black shadow-[0_20px_40px_rgba(0,0,0,0.15),_0_0_0_8px_rgba(255,255,255,0.5)] flex items-center justify-center">
+                <video
+                  src={`/videos/${video}`}
+                  autoPlay
+                  muted
+                  loop
+                  controls
+                  playsInline
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </div>
+            ))}
+          </div>
+
+          {/* Mobile View: Single Slider (9:16 aspect Portrait) */}
+          <div className="block md:hidden max-w-[320px] mx-auto relative">
+            <div 
+              className="aspect-[9/16]"
+              style={{
+                position: 'relative',
+                borderRadius: '24px',
+                overflow: 'hidden',
+                boxShadow: '0 20px 40px rgba(0,0,0,0.15), 0 0 0 8px rgba(255, 255, 255, 0.5)',
+                background: '#000',
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+                width: '100%'
+              }}
+            >
+              <AnimatePresence mode="wait">
+                <motion.video
+                  key={activeVideoIndex}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3 }}
+                  src={`/videos/${videoReels[activeVideoIndex]}`}
+                  controls
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </AnimatePresence>
+
+              {/* Slider Controls */}
+              <button
+                suppressHydrationWarning={true}
+                onClick={() => setActiveVideoIndex((prev) => (prev === 0 ? videoReels.length - 1 : prev - 1))}
+                style={{
+                  position: 'absolute',
+                  left: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(4px)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  zIndex: 10
+                }}
+              >
+                <ChevronLeft size={24} />
+              </button>
+              <button
+                suppressHydrationWarning={true}
+                onClick={() => setActiveVideoIndex((prev) => (prev + 1) % videoReels.length)}
+                style={{
+                  position: 'absolute',
+                  right: '10px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(255,255,255,0.2)',
+                  backdropFilter: 'blur(4px)',
+                  border: 'none',
+                  borderRadius: '50%',
+                  width: '40px',
+                  height: '40px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  color: '#fff',
+                  zIndex: 10
+                }}
+              >
+                <ChevronRight size={24} />
+              </button>
+              
+              {/* Dots */}
+              <div style={{
+                position: 'absolute',
+                bottom: '15px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                gap: '8px',
+                zIndex: 10
+              }}>
+                {videoReels.map((_, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      width: '8px',
+                      height: '8px',
+                      borderRadius: '50%',
+                      background: activeVideoIndex === idx ? '#FBBF24' : 'rgba(255,255,255,0.5)',
+                      transition: 'all 0.3s ease'
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
 
           <div className="text-center max-w-4xl mx-auto space-y-6">

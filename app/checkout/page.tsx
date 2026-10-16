@@ -4,25 +4,21 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import Script from 'next/script';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import {
   ShieldCheck,
   Lock,
   ArrowLeft,
   CheckCircle,
   Truck,
-  Phone,
-  User,
   MapPin,
-  Home,
-  Building2,
-  Check,
-  Package,
   AlertCircle,
   Shield,
-  Sparkles,
-  RotateCcw,
-  Loader2
+  ShoppingCart,
+  ChevronDown,
+  ChevronUp,
+  Loader2,
+  X
 } from 'lucide-react';
 import { getActiveAffiliateRef } from '../../components/AffiliateTracker';
 
@@ -76,21 +72,17 @@ function CheckoutContent() {
 
   // Pre-selection check
   const packageParam = searchParams.get('package') || searchParams.get('kit');
-  const isPreselected = Boolean(
-    packageParam && (packageParam === 'solo' || packageParam === 'sibling' || packageParam === 'family' || packageParam === 'starter')
-  );
-
   const initialPkgKey: 'solo' | 'sibling' | 'family' =
     packageParam === 'starter' ? 'sibling' :
     (packageParam === 'solo' || packageParam === 'sibling' || packageParam === 'family') ? packageParam : 'sibling';
 
   const [selectedPackageId, setSelectedPackageId] = useState<'solo' | 'sibling' | 'family'>(initialPkgKey);
   const [packagesData, setPackagesData] = useState(defaultPackages);
-  const [showPackagePicker, setShowPackagePicker] = useState<boolean>(!isPreselected);
 
-  // Address fields
+  // Address fields - empty by default so browser autofill suggestions trigger naturally
   const [customerName, setCustomerName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [flatNo, setFlatNo] = useState('');
   const [address, setAddress] = useState('');
   const [landmark, setLandmark] = useState('');
@@ -99,10 +91,13 @@ function CheckoutContent() {
   const [state, setState] = useState('');
   const [pincode, setPincode] = useState('');
 
-  // Auto-fill & pincode detection state
-  const [isAutoFilled, setIsAutoFilled] = useState<boolean>(false);
+  // UI state toggles: if user has a previously confirmed saved address on this device
+  const [hasSavedAddress, setHasSavedAddress] = useState(false);
+  const [isEditingAddress, setIsEditingAddress] = useState(false);
+  const [isOrderSummaryOpen, setIsOrderSummaryOpen] = useState(false);
+
+  // Pincode detection state
   const [pincodeLoading, setPincodeLoading] = useState<boolean>(false);
-  const [pincodeDetectedInfo, setPincodeDetectedInfo] = useState<string>('');
 
   // Processing & State
   const [isProcessing, setIsProcessing] = useState(false);
@@ -113,6 +108,7 @@ function CheckoutContent() {
   const saveDetailsToStorage = (updatedFields?: Partial<{
     customerName: string;
     phone: string;
+    email: string;
     flatNo: string;
     address: string;
     landmark: string;
@@ -125,6 +121,7 @@ function CheckoutContent() {
       const dataToSave = {
         customerName: updatedFields?.customerName !== undefined ? updatedFields.customerName : customerName,
         phone: updatedFields?.phone !== undefined ? updatedFields.phone : phone,
+        email: updatedFields?.email !== undefined ? updatedFields.email : email,
         flatNo: updatedFields?.flatNo !== undefined ? updatedFields.flatNo : flatNo,
         address: updatedFields?.address !== undefined ? updatedFields.address : address,
         landmark: updatedFields?.landmark !== undefined ? updatedFields.landmark : landmark,
@@ -158,7 +155,6 @@ function CheckoutContent() {
         setCity((prev) => (prev.trim() ? prev : detectedCity));
         setDistrict((prev) => (prev.trim() ? prev : detectedDistrict));
         setState((prev) => (prev.trim() ? prev : detectedState));
-        setPincodeDetectedInfo(`${detectedDistrict || detectedCity}, ${detectedState}`);
 
         saveDetailsToStorage({
           city: city.trim() || detectedCity,
@@ -166,8 +162,6 @@ function CheckoutContent() {
           state: state.trim() || detectedState,
           pincode: cleanPin
         });
-      } else {
-        setPincodeDetectedInfo('');
       }
     } catch (err) {
       console.warn('Pincode auto-lookup warning:', err);
@@ -183,27 +177,7 @@ function CheckoutContent() {
 
     if (cleanPin.length === 6) {
       fetchPincodeDetails(cleanPin);
-    } else {
-      setPincodeDetectedInfo('');
     }
-  };
-
-  const handleClearSavedData = () => {
-    setCustomerName('');
-    setPhone('');
-    setFlatNo('');
-    setAddress('');
-    setLandmark('');
-    setCity('');
-    setDistrict('');
-    setState('');
-    setPincode('');
-    setPincodeDetectedInfo('');
-    setIsAutoFilled(false);
-    try {
-      localStorage.removeItem('kidzmoney_user_address');
-      localStorage.removeItem('kidsgenlab_customer_info');
-    } catch (e) {}
   };
 
   // Restore details from URL params or localStorage on mount
@@ -212,6 +186,7 @@ function CheckoutContent() {
 
     const qName = searchParams.get('name') || searchParams.get('customerName');
     const qPhone = searchParams.get('phone') || searchParams.get('tel') || searchParams.get('contact');
+    const qEmail = searchParams.get('email');
     const qFlat = searchParams.get('flatNo') || searchParams.get('flat') || searchParams.get('house');
     const qAddress = searchParams.get('address') || searchParams.get('street');
     const qLandmark = searchParams.get('landmark');
@@ -229,17 +204,19 @@ function CheckoutContent() {
     } catch (e) {}
 
     const initName = qName || savedData?.customerName || savedData?.name || '';
-    const initPhone = (qPhone || savedData?.phone || savedData?.contact || '').replace(/\D/g, '').slice(0, 10);
+    const initPhone = (qPhone || savedData?.phone || savedData?.contact || '')?.replace(/\D/g, '').slice(-10);
+    const initEmail = qEmail || savedData?.email || '';
     const initFlat = qFlat || savedData?.flatNo || savedData?.flat || '';
     const initAddress = qAddress || savedData?.address || savedData?.street || '';
     const initLandmark = qLandmark || savedData?.landmark || '';
     const initCity = qCity || savedData?.city || '';
     const initDistrict = qDistrict || savedData?.district || '';
     const initState = qState || savedData?.state || '';
-    const initPin = (qPin || savedData?.pincode || savedData?.pin || '').replace(/\D/g, '').slice(0, 6);
+    const initPin = (qPin || savedData?.pincode || savedData?.pin || '')?.replace(/\D/g, '').slice(0, 6);
 
     if (initName) setCustomerName(initName);
     if (initPhone) setPhone(initPhone);
+    if (initEmail) setEmail(initEmail);
     if (initFlat) setFlatNo(initFlat);
     if (initAddress) setAddress(initAddress);
     if (initLandmark) setLandmark(initLandmark);
@@ -248,14 +225,61 @@ function CheckoutContent() {
     if (initState) setState(initState);
     if (initPin) setPincode(initPin);
 
-    if (initName || initPhone || initPin || initAddress) {
-      setIsAutoFilled(true);
-    }
-
-    if (initPin && initPin.length === 6 && (!initCity || !initState)) {
-      fetchPincodeDetails(initPin);
+    // If there is an existing saved profile, show saved card; otherwise show the autofill-ready form directly
+    if (initName && initPhone && (initAddress || initPin)) {
+      setHasSavedAddress(true);
+      setIsEditingAddress(false);
+    } else {
+      setHasSavedAddress(false);
+      setIsEditingAddress(true);
     }
   }, []);
+
+  // Browser Autofill Sync: Listen for native DOM input/change events fired by Chrome/Safari/Edge autofill
+  useEffect(() => {
+    const syncAutofillFromDom = () => {
+      const formEl = document.getElementById('checkout-shipping-form');
+      if (!formEl) return;
+
+      const getVal = (id: string) => {
+        const el = document.getElementById(id) as HTMLInputElement | null;
+        return el ? el.value.trim() : '';
+      };
+
+      const n = getVal('checkout-name');
+      const p = getVal('checkout-phone').replace(/\D/g, '').slice(-10);
+      const em = getVal('checkout-email');
+      const f = getVal('checkout-flat');
+      const a = getVal('checkout-street');
+      const l = getVal('checkout-landmark');
+      const pin = getVal('checkout-pincode').replace(/\D/g, '').slice(0, 6);
+      const c = getVal('checkout-city');
+      const s = getVal('checkout-state');
+
+      if (n) setCustomerName(n);
+      if (p) setPhone(p);
+      if (em) setEmail(em);
+      if (f) setFlatNo(f);
+      if (a) setAddress(a);
+      if (l) setLandmark(l);
+      if (pin) {
+        setPincode(pin);
+        if (pin.length === 6) fetchPincodeDetails(pin);
+      }
+      if (c) setCity(c);
+      if (s) setState(s);
+    };
+
+    const formEl = document.getElementById('checkout-shipping-form');
+    if (formEl) {
+      formEl.addEventListener('input', syncAutofillFromDom);
+      formEl.addEventListener('change', syncAutofillFromDom);
+      return () => {
+        formEl.removeEventListener('input', syncAutofillFromDom);
+        formEl.removeEventListener('change', syncAutofillFromDom);
+      };
+    }
+  }, [hasSavedAddress, isEditingAddress]);
 
   // Fetch Live Prices from Admin Settings
   useEffect(() => {
@@ -297,6 +321,8 @@ function CheckoutContent() {
   }, []);
 
   const activePackage = packagesData[selectedPackageId] || packagesData.sibling;
+  const totalSaved = Math.max(0, activePackage.originalPrice - activePackage.price);
+  const finalPrice = activePackage.price;
 
   const triggerConfetti = () => {
     if (typeof window !== 'undefined' && (window as any).confetti) {
@@ -304,94 +330,84 @@ function CheckoutContent() {
     }
   };
 
-  const handleWhatsAppDirectOrder = async () => {
+  // Online Razorpay Payment
+  const handlePaymentSubmit = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     setFormError('');
 
-    if (!customerName.trim()) {
-      setFormError('Please enter your Full Name to place your order via WhatsApp.');
-      return;
-    }
-    const cleanPhone = phone.trim().replace(/\D/g, '');
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setFormError('Please enter a valid 10-digit Mobile Number.');
-      return;
-    }
+    // Failsafe read directly from DOM to ensure autofilled inputs are captured even if synthetic events lagged
+    const getDomVal = (id: string, fallback: string) => {
+      const el = document.getElementById(id) as HTMLInputElement | null;
+      return el && el.value.trim() ? el.value.trim() : fallback.trim();
+    };
 
-    saveDetailsToStorage();
+    const finalName = getDomVal('checkout-name', customerName);
+    const rawPhone = getDomVal('checkout-phone', phone);
+    const cleanPhone = rawPhone.replace(/\D/g, '').slice(-10);
+    const finalEmail = getDomVal('checkout-email', email);
+    const finalFlat = getDomVal('checkout-flat', flatNo);
+    const finalAddress = getDomVal('checkout-street', address);
+    const finalLandmark = getDomVal('checkout-landmark', landmark);
+    const rawPin = getDomVal('checkout-pincode', pincode);
+    const cleanPin = rawPin.replace(/\D/g, '').slice(0, 6);
+    const finalCity = getDomVal('checkout-city', city);
+    const finalState = getDomVal('checkout-state', state);
 
-    const targetNumber = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918300297197';
-    const addressParts = [
-      flatNo ? `Flat/House: ${flatNo}` : '',
-      address ? `Street/Area: ${address}` : '',
-      landmark ? `Landmark: ${landmark}` : '',
-      city ? `City: ${city}` : '',
-      district ? `District: ${district}` : '',
-      state ? `State: ${state}` : '',
-      pincode ? `Pincode: ${pincode}` : ''
-    ].filter(Boolean);
+    // Sync to React state
+    if (finalName) setCustomerName(finalName);
+    if (cleanPhone) setPhone(cleanPhone);
+    if (finalEmail) setEmail(finalEmail);
+    if (finalFlat) setFlatNo(finalFlat);
+    if (finalAddress) setAddress(finalAddress);
+    if (finalLandmark) setLandmark(finalLandmark);
+    if (cleanPin) setPincode(cleanPin);
+    if (finalCity) setCity(finalCity);
+    if (finalState) setState(finalState);
 
-    const formattedAddress = addressParts.join(', ');
-
-    // Customer is directly diverted to WhatsApp, order will only be in DB if manually added later or if paid via Razorpay
-
-    let msg = `NEW DIRECT ORDER VIA WHATSAPP\n`;
-    msg += `--------------------------------------\n`;
-    msg += `Selected Kit: ${activePackage.name}\n`;
-    msg += `Offer Price: ₹${activePackage.price.toLocaleString('en-IN')}\n`;
-    msg += `Customer Name: ${customerName.trim()}\n`;
-    msg += `Phone Number: ${cleanPhone}\n`;
-    if (formattedAddress) {
-      msg += `Delivery Address: ${formattedAddress}\n`;
-    }
-    msg += `--------------------------------------\n`;
-    msg += `Hi KidsGen Lab! I am placing this order for the ${activePackage.name} (₹${activePackage.price.toLocaleString('en-IN')}). Please confirm my order and share payment QR / tracking details!\n\n${window.location.origin}${activePackage.image}`;
-
-    const waUrl = `https://wa.me/${targetNumber}?text=${encodeURIComponent(msg)}`;
-    window.open(waUrl, '_blank');
-  };
-
-  const handlePaymentSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError('');
-
-    if (!customerName.trim()) {
+    if (!finalName) {
       setFormError('Please enter your Full Name.');
+      setIsEditingAddress(true);
       return;
     }
-    const cleanPhone = phone.trim().replace(/\D/g, '');
     if (!cleanPhone || cleanPhone.length < 10) {
       setFormError('Please enter a valid 10-digit Mobile Number.');
+      setIsEditingAddress(true);
       return;
     }
-    if (!flatNo.trim()) {
-      setFormError('Please enter Flat, House no., or Building details.');
+    if (!finalFlat) {
+      setFormError('Please enter Flat, House no., or Door details.');
+      setIsEditingAddress(true);
       return;
     }
-    if (!address.trim()) {
-      setFormError('Please enter Area, Street or Sector.');
+    if (!finalAddress) {
+      setFormError('Please enter Street, Area or Colony.');
+      setIsEditingAddress(true);
       return;
     }
-    if (!city.trim()) {
-      setFormError('Please enter City / Town.');
+    if (!finalCity) {
+      setFormError('Please enter Town / City.');
+      setIsEditingAddress(true);
       return;
     }
-    if (!district.trim()) {
-      setFormError('Please enter District.');
-      return;
-    }
-    if (!state.trim()) {
-      setFormError('Please enter State.');
-      return;
-    }
-    const cleanPin = pincode.trim().replace(/\D/g, '');
     if (!cleanPin || cleanPin.length < 6) {
       setFormError('Please enter a valid 6-digit Pincode.');
+      setIsEditingAddress(true);
       return;
     }
 
-    // Persist details for future ease
-    saveDetailsToStorage();
+    saveDetailsToStorage({
+      customerName: finalName,
+      phone: cleanPhone,
+      email: finalEmail,
+      flatNo: finalFlat,
+      address: finalAddress,
+      landmark: finalLandmark,
+      city: finalCity,
+      state: finalState,
+      pincode: cleanPin
+    });
 
+    setHasSavedAddress(true);
     setIsProcessing(true);
 
     try {
@@ -400,7 +416,7 @@ function CheckoutContent() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          amount: activePackage.price,
+          amount: finalPrice,
           currency: 'INR',
           receipt: `rcpt_${Date.now()}`
         })
@@ -420,21 +436,20 @@ function CheckoutContent() {
         return;
       }
 
-      const fullStreetAddress = landmark.trim()
-        ? `${address.trim()}, Landmark: ${landmark.trim()}`
-        : address.trim();
+      const fullStreetAddress = `${finalFlat}, ${finalAddress}${finalLandmark ? `, Landmark: ${finalLandmark}` : ''}`;
 
       // 2. Launch Razorpay
       const options = {
         key: createData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_TWqcqybTpdjice',
         amount: createData.amount,
         currency: createData.currency || 'INR',
-        name: 'Smart Kids Money Lab',
+        name: 'KidsGenLab',
         description: `${activePackage.name} - Express Delivery`,
         order_id: createData.order_id,
         prefill: {
-          name: customerName.trim(),
+          name: finalName,
           contact: cleanPhone,
+          email: finalEmail || undefined,
           method: 'upi'
         },
         display: {
@@ -452,7 +467,7 @@ function CheckoutContent() {
           preferences: { show_default_blocks: true }
         },
         theme: {
-          color: '#000000'
+          color: '#111827'
         },
         handler: async function (response: any) {
           try {
@@ -465,17 +480,17 @@ function CheckoutContent() {
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
                 orderDetails: {
-                  customerName: customerName.trim(),
+                  customerName: finalName,
                   phone: cleanPhone,
-                  email: '',
-                  flatNo: flatNo.trim(),
+                  email: finalEmail,
+                  flatNo: finalFlat,
                   address: fullStreetAddress,
-                  city: city.trim(),
-                  district: district.trim(),
-                  state: state.trim(),
+                  city: finalCity,
+                  district: district.trim() || finalCity,
+                  state: finalState,
                   pincode: cleanPin,
                   packageName: activePackage.name,
-                  price: activePackage.price,
+                  price: finalPrice,
                   affiliateRef: getActiveAffiliateRef() || ''
                 }
               })
@@ -488,10 +503,10 @@ function CheckoutContent() {
                 paymentId: response.razorpay_payment_id,
                 orderId: response.razorpay_order_id,
                 packageName: activePackage.name,
-                price: activePackage.price,
-                customerName: customerName.trim(),
+                price: finalPrice,
+                customerName: finalName,
                 phone: cleanPhone,
-                city: city.trim(),
+                city: finalCity,
                 pincode: cleanPin
               });
               triggerConfetti();
@@ -546,8 +561,8 @@ function CheckoutContent() {
   // Hydration protection
   if (!isMounted) {
     return (
-      <div className="checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} suppressHydrationWarning={true}>
-        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#000000', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <div className="fast-checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }} suppressHydrationWarning={true}>
+        <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#111827', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <ShieldCheck style={{ width: '22px', height: '22px', color: '#ffffff' }} />
         </div>
       </div>
@@ -557,77 +572,52 @@ function CheckoutContent() {
   // SUCCESS SCREEN
   if (paymentSuccessData) {
     return (
-      <div className="checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }} suppressHydrationWarning={true}>
+      <div className="fast-checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px 16px' }} suppressHydrationWarning={true}>
         <motion.div
           initial={{ opacity: 0, scale: 0.94 }}
           animate={{ opacity: 1, scale: 1 }}
-          style={{ maxWidth: '440px', width: '100%', background: '#ffffff', borderRadius: '24px', border: '2px solid #000000', padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 20px 50px rgba(0,0,0,0.1)' }}
+          style={{ maxWidth: '440px', width: '100%', background: '#ffffff', borderRadius: '24px', border: '1px solid #e2e8f0', padding: '32px 20px', textAlign: 'center', display: 'flex', flexDirection: 'column', gap: '20px', boxShadow: '0 20px 50px rgba(0,0,0,0.08)' }}
           suppressHydrationWarning={true}
         >
-          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#000000', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
+          <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: '#059669', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto' }}>
             <CheckCircle style={{ width: '34px', height: '34px' }} />
           </div>
 
           <div>
-            <span style={{ display: 'inline-block', background: '#f3f4f6', color: '#000000', border: '1px solid #000000', fontSize: '0.72rem', fontWeight: 900, padding: '4px 12px', borderRadius: '50px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            <span style={{ display: 'inline-block', background: '#e6f9ed', color: '#059669', fontSize: '0.74rem', fontWeight: 800, padding: '4px 12px', borderRadius: '50px', textTransform: 'uppercase' }}>
               Order Confirmed & Verified
             </span>
-            <h1 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#000000', marginTop: '10px' }}>
+            <h1 style={{ fontSize: '1.45rem', fontWeight: 900, color: '#111827', marginTop: '10px' }}>
               Thank You, {paymentSuccessData.customerName}!
             </h1>
-            <p style={{ fontSize: '0.84rem', color: '#52525b', marginTop: '4px' }}>
-              Your physical kit has been queued for immediate express dispatch.
+            <p style={{ fontSize: '0.84rem', color: '#64748b', marginTop: '4px' }}>
+              Your physical activity kit has been queued for immediate express dispatch.
             </p>
           </div>
 
-          <div style={{ background: '#f8f9fa', borderRadius: '16px', padding: '16px', border: '1px solid #e5e7eb', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
-              <span style={{ color: '#52525b' }}>Selected Kit:</span>
-              <strong style={{ color: '#000000', fontWeight: 900 }}>{paymentSuccessData.packageName}</strong>
+          <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', textAlign: 'left', display: 'flex', flexDirection: 'column', gap: '10px', fontSize: '0.82rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+              <span style={{ color: '#64748b' }}>Selected Kit:</span>
+              <strong style={{ color: '#111827', fontWeight: 800 }}>{paymentSuccessData.packageName}</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
-              <span style={{ color: '#52525b' }}>Total Paid:</span>
-              <strong style={{ color: '#000000', fontWeight: 900, fontSize: '0.98rem' }}>₹{Number(paymentSuccessData.price).toLocaleString('en-IN')}</strong>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+              <span style={{ color: '#64748b' }}>Total Paid:</span>
+              <strong style={{ color: '#059669', fontWeight: 900, fontSize: '0.98rem' }}>₹{Number(paymentSuccessData.price).toLocaleString('en-IN')}</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e5e7eb' }}>
-              <span style={{ color: '#52525b' }}>Payment ID:</span>
-              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#000000' }}>{paymentSuccessData.paymentId}</span>
+            <div style={{ display: 'flex', justifyContent: 'space-between', paddingBottom: '8px', borderBottom: '1px solid #e2e8f0' }}>
+              <span style={{ color: '#64748b' }}>Payment ID:</span>
+              <span style={{ fontFamily: 'monospace', fontWeight: 700, color: '#111827' }}>{paymentSuccessData.paymentId}</span>
             </div>
             <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-              <span style={{ color: '#52525b' }}>Destination:</span>
-              <span style={{ color: '#000000', fontWeight: 800 }}>{paymentSuccessData.city} (PIN: {paymentSuccessData.pincode})</span>
+              <span style={{ color: '#64748b' }}>Destination:</span>
+              <span style={{ color: '#111827', fontWeight: 700 }}>{paymentSuccessData.city} (PIN: {paymentSuccessData.pincode})</span>
             </div>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', width: '100%' }}>
-            <a
-              href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '918300297197'}?text=${encodeURIComponent(
-                `Hi KidsGen Lab! I just completed my order #${paymentSuccessData.paymentId || 'NEW'} for ${paymentSuccessData.packageName} (₹${paymentSuccessData.price}). Please send my delivery tracking and confirmation!`
-              )}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                width: '100%',
-                padding: '14px',
-                background: '#25D366',
-                color: '#ffffff',
-                fontWeight: 900,
-                borderRadius: '12px',
-                textDecoration: 'none',
-                fontSize: '0.90rem',
-                boxShadow: '0 4px 14px rgba(37, 211, 102, 0.3)'
-              }}
-            >
-              <span>💬 Open WhatsApp Confirmation & Tracking</span>
-            </a>
-
             <Link
               href="/"
-              style={{ display: 'block', width: '100%', padding: '13px', background: '#000000', color: '#ffffff', fontWeight: 900, borderRadius: '12px', textDecoration: 'none', fontSize: '0.90rem', textAlign: 'center' }}
+              style={{ display: 'block', width: '100%', padding: '14px', background: '#111827', color: '#ffffff', fontWeight: 900, borderRadius: '12px', textDecoration: 'none', fontSize: '0.90rem', textAlign: 'center' }}
             >
               ← Return to Storefront
             </Link>
@@ -638,518 +628,547 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="checkout-page-root" suppressHydrationWarning={true}>
+    <div className="fast-checkout-page-root" suppressHydrationWarning={true}>
       
-      {/* Top Clean Monochrome Header */}
-      <header className="checkout-top-header" suppressHydrationWarning={true}>
-        <div className="checkout-header-inner">
-          <Link href="/" className="checkout-back-link">
-            <ArrowLeft style={{ width: '15px', height: '15px' }} />
-            <span>Back to Store</span>
-          </Link>
+      {/* 1. TOP HEADER (Brand & 100% Secured Payment) */}
+      <header className="fast-checkout-top-nav">
+        <Link href="/" className="fast-brand-title">
+          <ArrowLeft style={{ width: '18px', height: '18px', strokeWidth: 2.5 }} />
+          <span>KIDSGENLAB</span>
+        </Link>
 
-          <div className="checkout-secure-badge">
-            <ShieldCheck style={{ width: '15px', height: '15px', color: '#000000' }} />
-            <span>100% Secure Checkout</span>
-          </div>
+        <div className="fast-secured-badge">
+          <span>100% Secured Payment</span>
+          <Lock style={{ width: '14px', height: '14px', color: '#64748b' }} />
         </div>
       </header>
 
-      {/* Main Form Center Column */}
-      <main className="checkout-main-content" suppressHydrationWarning={true}>
+      {/* 2. TOP BANNER */}
+      <div className="fast-prepaid-announcement">
+        100% Verified Secure Checkout • Express Dispatch
+      </div>
+
+      <main className="fast-checkout-container" suppressHydrationWarning={true}>
         
-        {/* 1. DELIVERING PACKAGE CARD (When pre-selected from website) */}
-        {!showPackagePicker ? (
-          <div className="delivering-item-card" suppressHydrationWarning={true}>
-            <div className="delivering-card-header">
-              <div className="delivering-label">
-                <span className="delivering-pulse-dot" />
-                <span>Delivering Package</span>
-              </div>
-              <button
-                type="button"
-                suppressHydrationWarning={true}
-                onClick={() => setShowPackagePicker(true)}
-                className="change-package-btn"
-              >
-                Change Kit ›
-              </button>
-            </div>
-
-            <div className="delivering-card-body">
-              {/* Thumbnail */}
-              <div className="delivering-img-frame">
-                <img
-                  src={activePackage.image}
-                  alt={activePackage.name}
-                />
-              </div>
-
-              {/* Specs & Pricing */}
-              <div className="delivering-details">
-                <div className="delivering-title-row">
-                  <h3 className="delivering-kit-title">{activePackage.name}</h3>
-                  <span className="delivering-kit-price">₹{activePackage.price.toLocaleString('en-IN')}</span>
-                </div>
-
-                <p className="delivering-kit-desc">{activePackage.features}</p>
-
-                <div className="delivering-tags-row">
-                  <span className="tag-stock">✓ In Stock</span>
-                  <span className="tag-free-delivery">FREE Express Delivery</span>
-                  <span className="tag-mrp">₹{activePackage.originalPrice}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        ) : (
-          /* PACKAGE SELECTOR (When arrived without preselection or clicked change) */
-          <div className="package-picker-container" suppressHydrationWarning={true}>
-            <div className="package-picker-header">
-              <span className="package-picker-title">Select Your Mastery Kit</span>
-              <span className="tag-free-delivery">Free All-India Delivery</span>
-            </div>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              {(Object.keys(packagesData) as Array<'solo' | 'sibling' | 'family'>).map((key) => {
-                const pkg = packagesData[key];
-                const isSelected = selectedPackageId === key;
-
-                return (
-                  <div
-                    key={key}
-                    onClick={() => setSelectedPackageId(key)}
-                    className={`package-item-card ${isSelected ? 'active' : ''}`}
-                  >
-                    <div className="package-card-top">
-                      <div className="package-card-left">
-                        <div className="package-radio-circle">
-                          {isSelected && <Check style={{ width: '13px', height: '13px', strokeWidth: 3 }} />}
-                        </div>
-
-                        <div className="package-thumb-small">
-                          <img src={pkg.image} alt={pkg.name} />
-                        </div>
-
-                        <div className="package-info-block">
-                          <div className="package-name-row">
-                            <span className="package-name-text">{pkg.name}</span>
-                            {pkg.badge && (
-                              <span className="package-badge-mono">
-                                {pkg.badge}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="package-price-block">
-                        <span className="package-price-mrp">₹{pkg.originalPrice}</span>
-                        <span className="package-price-main">₹{pkg.price}</span>
-                      </div>
-                    </div>
-
-                    <div className="package-tagline-text">{pkg.tagline}</div>
-                  </div>
-                );
-              })}
-            </div>
+        {/* Error banner if any */}
+        {formError && (
+          <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: '10px', padding: '10px 14px', color: '#b91c1c', fontSize: '0.82rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '14px' }}>
+            <AlertCircle style={{ width: '16px', height: '16px', flexShrink: 0 }} />
+            <span>{formError}</span>
           </div>
         )}
 
-        {/* 2. DELIVERY ADDRESS FORM */}
-        <div className="checkout-form-card" suppressHydrationWarning={true}>
-          
-          <div className="form-header-box">
-            <div className="form-header-icon">
-              <MapPin style={{ width: '18px', height: '18px' }} />
+        {/* SECTION: DELIVERY DETAILS */}
+        <div className="fast-section-header">DELIVERY DETAILS</div>
+
+        {/* CARD 1: ORDER SUMMARY */}
+        <div className="fast-card" style={{ padding: '14px 16px' }}>
+          <div
+            onClick={() => setIsOrderSummaryOpen(!isOrderSummaryOpen)}
+            style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', cursor: 'pointer', userSelect: 'none' }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <ShoppingCart style={{ width: '18px', height: '18px', color: '#334155' }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span style={{ fontWeight: 800, fontSize: '0.94rem', color: '#0f172a' }}>Order Summary</span>
+                {totalSaved > 0 && (
+                  <span className="fast-savings-pill">
+                    ₹{totalSaved.toLocaleString('en-IN')} saved so far
+                  </span>
+                )}
+              </div>
             </div>
-            <div className="form-header-text">
-              <h2>Enter Delivery Address</h2>
-              <p>Physical activity kit will be dispatched to this address</p>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: 600 }}>1 item</div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span style={{ fontSize: '0.80rem', color: '#94a3b8', textDecoration: 'line-through' }}>
+                    ₹{activePackage.originalPrice.toLocaleString('en-IN')}
+                  </span>
+                  <span style={{ fontSize: '1.02rem', fontWeight: 900, color: '#0f172a' }}>
+                    ₹{finalPrice.toLocaleString('en-IN')}
+                  </span>
+                </div>
+              </div>
+              {isOrderSummaryOpen ? (
+                <ChevronUp style={{ width: '18px', height: '18px', color: '#64748b' }} />
+              ) : (
+                <ChevronDown style={{ width: '18px', height: '18px', color: '#64748b' }} />
+              )}
             </div>
           </div>
 
-          {/* AUTO-FILL HELPER NOTICE */}
-          {isAutoFilled && (customerName || phone || pincode) && (
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                background: '#f0fdf4',
-                border: '1px solid #bbf7d0',
-                borderRadius: '10px',
-                padding: '10px 14px',
-                marginBottom: '14px',
-                fontSize: '0.78rem',
-                color: '#166534'
-              }}
+          {/* Expandable Package Selector / Breakdown */}
+          {isOrderSummaryOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              style={{ marginTop: '14px', paddingTop: '14px', borderTop: '1px solid #f1f5f9' }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Sparkles style={{ width: '15px', height: '15px', color: '#16a34a', flexShrink: 0 }} />
-                <span><strong>Autofill Active:</strong> Details restored from your saved profile / browser</span>
+              <div style={{ fontSize: '0.74rem', fontWeight: 800, color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>
+                Select Your Package:
               </div>
-              <button
-                type="button"
-                onClick={handleClearSavedData}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: '#15803d',
-                  fontSize: '0.74rem',
-                  fontWeight: 700,
-                  textDecoration: 'underline',
-                  cursor: 'pointer',
-                  padding: '2px 6px'
-                }}
-              >
-                Clear
-              </button>
-            </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {(Object.keys(packagesData) as Array<'solo' | 'sibling' | 'family'>).map((key) => {
+                  const pkg = packagesData[key];
+                  const isSelected = selectedPackageId === key;
+
+                  return (
+                    <div
+                      key={key}
+                      onClick={() => setSelectedPackageId(key)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '10px 12px',
+                        borderRadius: '10px',
+                        border: isSelected ? '2px solid #111827' : '1px solid #e2e8f0',
+                        background: isSelected ? '#f8fafc' : '#ffffff',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ width: '18px', height: '18px', borderRadius: '50%', border: isSelected ? '5px solid #111827' : '2px solid #cbd5e1', background: '#ffffff' }} />
+                        <div>
+                          <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#0f172a' }}>
+                            {pkg.name} {pkg.badge && <span style={{ fontSize: '0.68rem', fontWeight: 800, background: '#111827', color: '#ffffff', padding: '1px 6px', borderRadius: '4px', marginLeft: '4px' }}>{pkg.badge}</span>}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: '#64748b' }}>{pkg.tagline}</div>
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <span style={{ fontSize: '0.74rem', color: '#94a3b8', textDecoration: 'line-through', marginRight: '4px' }}>₹{pkg.originalPrice}</span>
+                        <strong style={{ fontSize: '0.90rem', color: '#0f172a' }}>₹{pkg.price}</strong>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Price Breakdown */}
+              <div style={{ marginTop: '12px', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '0.78rem', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                  <span>Kit MRP:</span>
+                  <span>₹{activePackage.originalPrice}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#059669', fontWeight: 700 }}>
+                  <span>Package Savings:</span>
+                  <span>-₹{totalSaved}</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', color: '#64748b' }}>
+                  <span>Delivery Charges:</span>
+                  <span style={{ color: '#059669', fontWeight: 800 }}>FREE</span>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: '0.86rem', color: '#0f172a', paddingTop: '6px', borderTop: '1px solid #e2e8f0' }}>
+                  <span>Net Payable:</span>
+                  <span>₹{finalPrice}</span>
+                </div>
+              </div>
+            </motion.div>
           )}
-
-          {formError && (
-            <div className="form-error-banner">
-              <AlertCircle style={{ width: '18px', height: '18px', flexShrink: 0 }} />
-              <span>{formError}</span>
-            </div>
-          )}
-
-          <form
-            onSubmit={handlePaymentSubmit}
-            id="checkoutAddressForm"
-            name="checkoutAddressForm"
-            autoComplete="off"
-            method="post"
-            action="#"
-            suppressHydrationWarning={true}
-          >
-            
-            {/* Country / Region */}
-            <div className="form-input-group">
-              <label className="form-field-label" htmlFor="customerCountry">Country / Region</label>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: '#f3f4f6', border: '1.5px solid #d1d5db', borderRadius: '10px', padding: '11px 14px', fontSize: '0.84rem', fontWeight: 800, color: '#000000' }}>
-                <span>🇮🇳 India (Free Express Delivery)</span>
-                <Check style={{ width: '16px', height: '16px', color: '#000000', strokeWidth: 3 }} />
-              </div>
-              <input type="hidden" id="customerCountry" name="country-name" autoComplete="country-name" value="India" />
-            </div>
-
-            {/* Full Name */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerName">
-                Full Name (First and Last name) <span className="req">*</span>
-              </label>
-              <div className="form-input-wrapper">
-                <User className="input-icon" style={{ width: '18px', height: '18px' }} />
-                <input
-                  type="text"
-                  id="customerName"
-                  name="name"
-                  autoComplete="name"
-                  autoCapitalize="words"
-                  autoCorrect="off"
-                  spellCheck={false}
-                  required
-                  suppressHydrationWarning={true}
-                  value={customerName}
-                  onChange={(e) => {
-                    setCustomerName(e.target.value);
-                    saveDetailsToStorage({ customerName: e.target.value });
-                  }}
-                  placeholder="e.g. Rahul Sharma"
-                  className="form-control-input"
-                />
-              </div>
-            </div>
-
-            {/* Mobile Number */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerPhone">
-                Mobile Number (for courier updates & call) <span className="req">*</span>
-              </label>
-              <div className="phone-input-combo">
-                <span className="phone-country-code">+91</span>
-                <input
-                  type="tel"
-                  id="customerPhone"
-                  name="tel"
-                  autoComplete="tel"
-                  inputMode="tel"
-                  required
-                  suppressHydrationWarning={true}
-                  value={phone}
-                  onChange={(e) => {
-                    const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                    setPhone(val);
-                    saveDetailsToStorage({ phone: val });
-                  }}
-                  placeholder="10-digit mobile number"
-                  maxLength={10}
-                  className="phone-field-input"
-                />
-              </div>
-              <span style={{ fontSize: '0.72rem', color: '#52525b', marginTop: '2px' }}>
-                Courier tracking link will be sent to WhatsApp upon dispatch.
-              </span>
-            </div>
-
-            {/* Flat / House No. */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerFlatNo">
-                Flat, House no., Building, Apartment <span className="req">*</span>
-              </label>
-              <div className="form-input-wrapper">
-                <Home className="input-icon" style={{ width: '18px', height: '18px' }} />
-                <input
-                  type="text"
-                  id="customerFlatNo"
-                  name="address-line1"
-                  autoComplete="address-line1"
-                  required
-                  suppressHydrationWarning={true}
-                  value={flatNo}
-                  onChange={(e) => {
-                    setFlatNo(e.target.value);
-                    saveDetailsToStorage({ flatNo: e.target.value });
-                  }}
-                  placeholder="e.g. Flat 402, Sunshine Heights, Door 12-B"
-                  className="form-control-input"
-                />
-              </div>
-            </div>
-
-            {/* Area / Street / Sector */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerAddress">
-                Area, Street, Sector, Village <span className="req">*</span>
-              </label>
-              <div className="form-input-wrapper">
-                <Building2 className="input-icon" style={{ width: '18px', height: '18px' }} />
-                <input
-                  type="text"
-                  id="customerAddress"
-                  name="address-line2"
-                  autoComplete="address-line2"
-                  required
-                  suppressHydrationWarning={true}
-                  value={address}
-                  onChange={(e) => {
-                    setAddress(e.target.value);
-                    saveDetailsToStorage({ address: e.target.value });
-                  }}
-                  placeholder="e.g. MG Road, Sector 15, Near Metro Pillar 42"
-                  className="form-control-input"
-                />
-              </div>
-            </div>
-
-            {/* Landmark (Optional) */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerLandmark">
-                Landmark <span style={{ color: '#71717a', fontWeight: 500 }}>(Optional)</span>
-              </label>
-              <input
-                type="text"
-                id="customerLandmark"
-                name="address-line3"
-                autoComplete="address-line3"
-                suppressHydrationWarning={true}
-                value={landmark}
-                onChange={(e) => {
-                  setLandmark(e.target.value);
-                  saveDetailsToStorage({ landmark: e.target.value });
-                }}
-                placeholder="E.g. Near Apollo Hospital / Opposite City Park"
-                className="form-control-input no-icon"
-              />
-            </div>
-
-            {/* Pincode with Auto-Detect */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <label className="form-field-label" htmlFor="customerPincode">
-                  6-digit Pincode <span className="req">*</span>
-                </label>
-                {pincodeLoading && (
-                  <span style={{ fontSize: '0.72rem', color: '#000000', display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 600 }}>
-                    <Loader2 style={{ width: '12px', height: '12px', animation: 'spin 1s linear infinite' }} />
-                    Detecting City/State...
-                  </span>
-                )}
-                {!pincodeLoading && pincodeDetectedInfo && (
-                  <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <Check style={{ width: '12px', height: '12px' }} />
-                    {pincodeDetectedInfo}
-                  </span>
-                )}
-              </div>
-              <input
-                type="text"
-                id="customerPincode"
-                name="postal-code"
-                autoComplete="postal-code"
-                inputMode="numeric"
-                required
-                suppressHydrationWarning={true}
-                value={pincode}
-                onChange={handlePincodeChange}
-                placeholder="e.g. 400001 (auto-fills city & state)"
-                maxLength={6}
-                className="form-control-input no-icon"
-                style={{ fontFamily: 'monospace', letterSpacing: '0.05em' }}
-              />
-            </div>
-
-            {/* Town/City & District */}
-            <div className="form-grid-2col" style={{ marginTop: '14px' }}>
-              <div className="form-input-group">
-                <label className="form-field-label" htmlFor="customerCity">
-                  Town / City <span className="req">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="customerCity"
-                  name="address-level2"
-                  autoComplete="address-level2"
-                  required
-                  suppressHydrationWarning={true}
-                  value={city}
-                  onChange={(e) => {
-                    setCity(e.target.value);
-                    saveDetailsToStorage({ city: e.target.value });
-                  }}
-                  placeholder="e.g. Mumbai"
-                  className="form-control-input no-icon"
-                />
-              </div>
-
-              <div className="form-input-group">
-                <label className="form-field-label" htmlFor="customerDistrict">
-                  District <span className="req">*</span>
-                </label>
-                <input
-                  type="text"
-                  id="customerDistrict"
-                  name="address-level3"
-                  autoComplete="address-level3"
-                  required
-                  suppressHydrationWarning={true}
-                  value={district}
-                  onChange={(e) => {
-                    setDistrict(e.target.value);
-                    saveDetailsToStorage({ district: e.target.value });
-                  }}
-                  placeholder="e.g. Thane"
-                  className="form-control-input no-icon"
-                />
-              </div>
-            </div>
-
-            {/* State */}
-            <div className="form-input-group" style={{ marginTop: '14px' }}>
-              <label className="form-field-label" htmlFor="customerState">
-                State <span className="req">*</span>
-              </label>
-              <input
-                type="text"
-                id="customerState"
-                name="address-level1"
-                autoComplete="address-level1"
-                required
-                suppressHydrationWarning={true}
-                value={state}
-                onChange={(e) => {
-                  setState(e.target.value);
-                  saveDetailsToStorage({ state: e.target.value });
-                }}
-                placeholder="e.g. Maharashtra"
-                className="form-control-input no-icon"
-              />
-            </div>
-
-            {/* PRIMARY HIGH-CONVERTING LUXURY PAY BUTTON */}
-            <div style={{ marginTop: '20px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="submit"
-                disabled={isProcessing}
-                suppressHydrationWarning={true}
-                className="checkout-submit-btn"
-              >
-                {isProcessing ? (
-                  <>
-                    <span style={{ display: 'inline-block', width: '18px', height: '18px', border: '2px solid #000000', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
-                    <span>Connecting Payment Gateway...</span>
-                  </>
-                ) : (
-                  <>
-                    <span>Use this address & Pay ₹{activePackage.price.toLocaleString('en-IN')}</span>
-                  </>
-                )}
-              </button>
-
-              {/* OR FAST ORDER ON WHATSAPP BUTTON */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '4px 0' }}>
-                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-                <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, textTransform: 'uppercase' }}>or fast checkout</span>
-                <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-              </div>
-
-              <button
-                type="button"
-                onClick={handleWhatsAppDirectOrder}
-                suppressHydrationWarning={true}
-                style={{
-                  width: '100%',
-                  padding: '14px',
-                  borderRadius: '14px',
-                  border: 'none',
-                  backgroundColor: '#25D366',
-                  color: '#ffffff',
-                  fontWeight: 900,
-                  fontSize: '0.94rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '10px',
-                  cursor: 'pointer',
-                  boxShadow: '0 6px 20px rgba(37, 211, 102, 0.35)',
-                  transition: 'transform 0.15s ease, background 0.15s ease'
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = '#1ebe57')}
-                onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = '#25D366')}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512" width="22" height="22" fill="#ffffff">
-                  <path d="M380.9 97.1C339 55.1 283.2 32 223.9 32c-122.4 0-222 99.6-222 222 0 39.1 10.2 77.3 29.6 111L0 480l117.7-30.9c32.4 17.7 68.9 27 106.1 27h.1c122.3 0 224.1-99.6 224.1-222 0-59.3-25.2-115-67.1-157.1zM223.9 436.8c-33.1 0-65.5-8.9-94-25.7l-6.7-4-69.8 18.3L72 359.2l-4.4-7c-18.5-29.4-28.2-63.3-28.2-98.2 0-101.7 82.8-184.5 184.6-184.5 49.3 0 95.6 19.2 130.4 54.1 34.8 34.9 56.2 81.2 56.1 130.5 0 101.8-84.9 184.6-186.6 184.6zm101.2-138.2c-5.5-2.8-32.8-16.2-37.9-18-5.1-1.9-8.8-2.8-12.5 2.8-3.7 5.6-14.3 18-17.6 21.8-3.2 3.7-6.5 4.2-12 1.4-32.6-16.3-54-29.1-75.5-66-5.7-9.8 5.7-9.1 16.3-30.3 1.8-3.7.9-6.9-.5-9.7-1.4-2.8-12.5-30.1-17.1-41.2-4.5-10.8-9.1-9.3-12.5-9.5-3.2-.2-6.9-.2-10.6-.2-3.7 0-9.7 1.4-14.8 6.9-5.1 5.6-19.4 19-19.4 46.3 0 27.3 19.9 53.7 22.6 57.4 2.8 3.7 39.1 59.7 94.8 83.8 35.2 15.2 49 16.5 66.6 13.9 10.7-1.6 32.8-13.4 37.4-26.4 4.6-13 4.6-24.1 3.2-26.4-1.3-2.5-5-3.9-10.5-6.6z"/>
-                </svg>
-                <span>Order via WhatsApp (Pay on Chat)</span>
-              </button>
-
-            </div>
-
-          </form>
-
         </div>
 
-        {/* 3 Trust Features (Monochrome) */}
-        <div className="trust-features-grid" suppressHydrationWarning={true}>
-          <div className="trust-feature-box">
-            <Truck style={{ width: '20px', height: '20px', color: '#000000' }} />
-            <span className="trust-feature-title">Express Courier</span>
-            <span className="trust-feature-sub">3-5 Days Delivery</span>
+        {/* CARD 2: DELIVERY DETAILS & INSTANT AUTOFILL ADDRESS FORM */}
+        <div className="fast-card" style={{ position: 'relative' }}>
+          {hasSavedAddress && !isEditingAddress ? (
+            /* Saved Address Summary View */
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '12px' }}>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px' }}>
+                  <MapPin style={{ width: '15px', height: '15px', color: '#16a34a' }} />
+                  <h3 style={{ fontSize: '0.94rem', fontWeight: 800, color: '#0f172a', margin: 0 }}>
+                    Deliver To {customerName || 'Your Name'}
+                  </h3>
+                </div>
+
+                <div style={{ marginTop: '5px', fontSize: '0.82rem', color: '#334155', lineHeight: 1.45 }}>
+                  <div>{flatNo ? `${flatNo}, ` : ''}{address}{landmark ? `, Near ${landmark}` : ''}</div>
+                  <div>{city ? `${city}, ` : ''}{state ? `${state}, ` : ''}{pincode}</div>
+                </div>
+
+                <div style={{ marginTop: '6px', fontSize: '0.78rem', color: '#64748b', display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                  <span>+91 {phone}</span>
+                  {email && (
+                    <>
+                      <span>|</span>
+                      <span>{email}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+
+              {/* Right side: [ Change ] button */}
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', flexShrink: 0 }}>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingAddress(true)}
+                  className="fast-btn-change"
+                >
+                  Change
+                </button>
+              </div>
+            </div>
+          ) : (
+            /* Active Address Input Form with Standard Browser Autofill Heuristics */
+            <form
+              id="checkout-shipping-form"
+              name="shipping-address-form"
+              method="post"
+              action="#"
+              autoComplete="on"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handlePaymentSubmit();
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <MapPin style={{ width: '16px', height: '16px', color: '#16a34a' }} />
+                  <span style={{ fontWeight: 800, fontSize: '0.92rem', color: '#0f172a' }}>
+                    {hasSavedAddress ? 'Edit Delivery Address' : 'Enter Delivery Details'}
+                  </span>
+                </div>
+                {hasSavedAddress && (
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingAddress(false)}
+                    style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+
+              {/* Browser Autofill Helper Banner */}
+              <div style={{
+                background: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '8px',
+                padding: '7px 10px',
+                marginBottom: '12px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                fontSize: '0.74rem',
+                color: '#15803d',
+                fontWeight: 600
+              }}>
+                <span style={{ fontSize: '0.85rem' }}>⚡</span>
+                <span><strong>Browser Autofill Enabled:</strong> Tap any field to auto-fill your saved address from Google or your browser.</span>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Full Name */}
+                <div>
+                  <label htmlFor="checkout-name" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                    Full Name <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="checkout-name"
+                    name="name"
+                    type="text"
+                    autoComplete="name"
+                    autoCapitalize="words"
+                    spellCheck={false}
+                    value={customerName}
+                    onChange={(e) => {
+                      setCustomerName(e.target.value);
+                      saveDetailsToStorage({ customerName: e.target.value });
+                    }}
+                    placeholder="Enter full name"
+                    style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                  />
+                </div>
+
+                {/* Mobile & Email */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <label htmlFor="checkout-phone" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                      Mobile Number <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <div style={{ display: 'flex' }}>
+                      <span style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRight: 'none', padding: '9px 8px', borderRadius: '8px 0 0 8px', fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>+91</span>
+                      <input
+                        id="checkout-phone"
+                        name="tel"
+                        type="tel"
+                        inputMode="tel"
+                        autoComplete="tel"
+                        maxLength={10}
+                        value={phone}
+                        onChange={(e) => {
+                          const v = e.target.value.replace(/\D/g, '').slice(-10);
+                          setPhone(v);
+                          saveDetailsToStorage({ phone: v });
+                        }}
+                        placeholder="10-digit number"
+                        style={{ width: '100%', padding: '9px 10px', borderRadius: '0 8px 8px 0', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label htmlFor="checkout-email" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                      Email (Optional)
+                    </label>
+                    <input
+                      id="checkout-email"
+                      name="email"
+                      type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      spellCheck={false}
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        saveDetailsToStorage({ email: e.target.value });
+                      }}
+                      placeholder="name@email.com"
+                      style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                    />
+                  </div>
+                </div>
+
+                {/* Flat / House No */}
+                <div>
+                  <label htmlFor="checkout-flat" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                    Flat / House No. / Building <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="checkout-flat"
+                    name="address-line1"
+                    type="text"
+                    autoComplete="address-line1"
+                    value={flatNo}
+                    onChange={(e) => {
+                      setFlatNo(e.target.value);
+                      saveDetailsToStorage({ flatNo: e.target.value });
+                    }}
+                    placeholder="e.g. 14A, 2nd Floor, Sai Apartments"
+                    style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                  />
+                </div>
+
+                {/* Street / Area */}
+                <div>
+                  <label htmlFor="checkout-street" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                    Area / Street / Sector <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="checkout-street"
+                    name="address-line2"
+                    type="text"
+                    autoComplete="address-line2"
+                    value={address}
+                    onChange={(e) => {
+                      setAddress(e.target.value);
+                      saveDetailsToStorage({ address: e.target.value });
+                    }}
+                    placeholder="e.g. Adhilakshmi Nagar, Mathulampett"
+                    style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                  />
+                </div>
+
+                {/* Landmark */}
+                <div>
+                  <label htmlFor="checkout-landmark" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                    Landmark (Optional)
+                  </label>
+                  <input
+                    id="checkout-landmark"
+                    name="address-level3"
+                    type="text"
+                    autoComplete="address-level3"
+                    value={landmark}
+                    onChange={(e) => {
+                      setLandmark(e.target.value);
+                      saveDetailsToStorage({ landmark: e.target.value });
+                    }}
+                    placeholder="e.g. Near Mariyamman Kovil"
+                    style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                  />
+                </div>
+
+                {/* 6-Digit Pincode + City */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '3px' }}>
+                      <label htmlFor="checkout-pincode" style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>
+                        Pincode <span style={{ color: '#ef4444' }}>*</span>
+                      </label>
+                      {pincodeLoading && <span style={{ fontSize: '0.65rem', color: '#16a34a', fontWeight: 700 }}>Checking...</span>}
+                    </div>
+                    <input
+                      id="checkout-pincode"
+                      name="postal-code"
+                      type="text"
+                      inputMode="numeric"
+                      autoComplete="postal-code"
+                      maxLength={6}
+                      value={pincode}
+                      onChange={handlePincodeChange}
+                      placeholder="6-digit PIN"
+                      style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem', letterSpacing: '0.04em' }}
+                    />
+                  </div>
+
+                  <div>
+                    <label htmlFor="checkout-city" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                      City / Town <span style={{ color: '#ef4444' }}>*</span>
+                    </label>
+                    <input
+                      id="checkout-city"
+                      name="address-level2"
+                      type="text"
+                      autoComplete="address-level2"
+                      value={city}
+                      onChange={(e) => {
+                        setCity(e.target.value);
+                        saveDetailsToStorage({ city: e.target.value });
+                      }}
+                      placeholder="e.g. Kumbakonam"
+                      style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                    />
+                  </div>
+                </div>
+
+                {/* State */}
+                <div>
+                  <label htmlFor="checkout-state" style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: '#475569', marginBottom: '3px' }}>
+                    State <span style={{ color: '#ef4444' }}>*</span>
+                  </label>
+                  <input
+                    id="checkout-state"
+                    name="address-level1"
+                    type="text"
+                    autoComplete="address-level1"
+                    value={state}
+                    onChange={(e) => {
+                      setState(e.target.value);
+                      saveDetailsToStorage({ state: e.target.value });
+                    }}
+                    placeholder="e.g. Tamil Nadu"
+                    style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
+                  />
+                </div>
+
+                {/* Hidden Country Input for Browser Autofill Heuristics Engine */}
+                <input
+                  id="checkout-country"
+                  name="country"
+                  type="hidden"
+                  autoComplete="country-name"
+                  value="India"
+                />
+
+                {/* Save button if user toggled from existing saved address */}
+                {hasSavedAddress && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (!customerName.trim() || !phone.trim() || !flatNo.trim() || !address.trim() || !pincode.trim()) {
+                        alert('Please fill the required address details.');
+                        return;
+                      }
+                      saveDetailsToStorage();
+                      setIsEditingAddress(false);
+                    }}
+                    style={{
+                      marginTop: '4px',
+                      padding: '11px',
+                      borderRadius: '8px',
+                      background: '#111827',
+                      color: '#ffffff',
+                      fontWeight: 800,
+                      fontSize: '0.85rem',
+                      border: 'none',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Confirm & Save Address ✓
+                  </button>
+                )}
+              </div>
+            </form>
+          )}
+        </div>
+
+        {/* CARD 3: SHIPPING CHARGE */}
+        <div className="fast-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>
+            Shipping Charge
+          </span>
+          <span className="shipping-free-badge">
+            Free
+          </span>
+        </div>
+
+        {/* SECTION: PAYMENT OPTIONS */}
+        <div className="fast-section-header">PAYMENT OPTIONS</div>
+
+        {/* ACTION BUTTON */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          
+          {/* Yellow High-Converting Pay Now Button */}
+          <button
+            type="button"
+            onClick={() => handlePaymentSubmit()}
+            disabled={isProcessing}
+            style={{
+              width: '100%',
+              padding: '16px',
+              borderRadius: '12px',
+              background: '#FFD814',
+              color: '#0F172A',
+              fontWeight: 900,
+              fontSize: '1.04rem',
+              border: '1px solid #FCD200',
+              cursor: isProcessing ? 'not-allowed' : 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              boxShadow: '0 4px 14px rgba(255, 216, 20, 0.45)',
+              transition: 'all 0.15s ease'
+            }}
+          >
+            {isProcessing ? (
+              <>
+                <Loader2 style={{ width: '18px', height: '18px', animation: 'spin 1s linear infinite', color: '#0F172A' }} />
+                <span>Connecting Payment Gateway...</span>
+              </>
+            ) : (
+              <>
+                <Lock style={{ width: '17px', height: '17px', color: '#0F172A', strokeWidth: 2.5 }} />
+                <span>Pay Now • ₹{finalPrice.toLocaleString('en-IN')}</span>
+              </>
+            )}
+          </button>
+        </div>
+
+        {/* 3 Trust Feature Boxes (Fully Visible on Scroll) */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px', marginTop: '16px', marginBottom: '24px' }}>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 6px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <Truck style={{ width: '20px', height: '20px', color: '#111827', margin: '0 auto 6px' }} />
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>Express Courier</div>
+            <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px' }}>3-5 Days Delivery</div>
           </div>
 
-          <div className="trust-feature-box">
-            <Shield style={{ width: '20px', height: '20px', color: '#000000' }} />
-            <span className="trust-feature-title">100% Protected</span>
-            <span className="trust-feature-sub">Guaranteed Dispatch</span>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 6px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <Shield style={{ width: '20px', height: '20px', color: '#111827', margin: '0 auto 6px' }} />
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>100% Protected</div>
+            <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px' }}>Guaranteed Dispatch</div>
           </div>
 
-          <div className="trust-feature-box">
-            <Lock style={{ width: '20px', height: '20px', color: '#000000' }} />
-            <span className="trust-feature-title">Bank Encrypted</span>
-            <span className="trust-feature-sub">256-Bit SSL Secure</span>
+          <div style={{ background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '14px 6px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+            <Lock style={{ width: '20px', height: '20px', color: '#111827', margin: '0 auto 6px' }} />
+            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#0f172a' }}>Bank Encrypted</div>
+            <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px' }}>256-Bit SSL Secure</div>
           </div>
         </div>
 
@@ -1163,7 +1182,7 @@ function CheckoutContent() {
 
 export default function CheckoutPage() {
   return (
-    <Suspense fallback={<div className="checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Checkout...</div>}>
+    <Suspense fallback={<div className="fast-checkout-page-root" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Checkout...</div>}>
       <CheckoutContent />
     </Suspense>
   );

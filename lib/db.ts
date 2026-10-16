@@ -96,6 +96,66 @@ export async function initDatabase() {
     )
   `);
 
+  // 5. Create Inventory Items Table (Tracking what products we hold)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS inventory_items (
+      id TEXT PRIMARY KEY,
+      name TEXT NOT NULL,
+      sku TEXT,
+      category TEXT DEFAULT 'Kit',
+      current_stock INTEGER DEFAULT 0,
+      min_threshold INTEGER DEFAULT 15,
+      unit_cost REAL DEFAULT 0,
+      created_at TEXT DEFAULT (datetime('now')),
+      updated_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  // 6. Create Inventory Logs Table (Tracking what comes IN and goes OUT)
+  await db.execute(`
+    CREATE TABLE IF NOT EXISTS inventory_logs (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      item_id TEXT NOT NULL,
+      item_name TEXT NOT NULL,
+      type TEXT NOT NULL, -- 'IN' (Received/Restock) or 'OUT' (Dispatched/Order)
+      quantity INTEGER NOT NULL,
+      reason TEXT NOT NULL, -- 'Customer Order', 'Supplier Restock', 'Manual Adjustment', 'Damage / Sample'
+      reference_id TEXT, -- e.g. ORD-1002, PO-992
+      performed_by TEXT DEFAULT 'Admin',
+      notes TEXT,
+      created_at TEXT DEFAULT (datetime('now'))
+    )
+  `);
+
+  // Seed default product inventory items if none exist
+  try {
+    const invCountRes = await db.execute('SELECT COUNT(*) as count FROM inventory_items');
+    const invCount = Number(invCountRes.rows[0]?.count || 0);
+
+    if (invCount === 0) {
+      const defaultProducts = [
+        { id: 'PROD-STARTER', name: 'Starter Saver Kit', sku: 'KGL-ST-01', category: 'Smart Money Kit', stock: 120, min: 15, cost: 450 },
+        { id: 'PROD-ACHIEVER', name: 'Little Achiever Kit', sku: 'KGL-LA-02', category: 'Smart Money Kit', stock: 85, min: 15, cost: 580 },
+        { id: 'PROD-FAMILY', name: 'Family Champions Bundle', sku: 'KGL-FC-03', category: 'Bundle Pack', stock: 45, min: 10, cost: 950 }
+      ];
+
+      for (const prod of defaultProducts) {
+        await db.execute({
+          sql: `INSERT OR IGNORE INTO inventory_items (id, name, sku, category, current_stock, min_threshold, unit_cost) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          args: [prod.id, prod.name, prod.sku, prod.category, prod.stock, prod.min, prod.cost]
+        });
+
+        // Insert initial baseline Stock In log
+        await db.execute({
+          sql: `INSERT INTO inventory_logs (item_id, item_name, type, quantity, reason, reference_id, performed_by, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+          args: [prod.id, prod.name, 'IN', prod.stock, 'Initial Opening Stock / Restock Batch', 'BATCH-INIT-01', 'Admin', 'Baseline factory batch received']
+        });
+      }
+    }
+  } catch (seedErr) {
+    console.warn('[DB] Inventory seed note:', seedErr);
+  }
+
   // 4. Auto-migrate existing JSON data if SQLite tables are empty
   try {
     const existingOrdersCount = await db.execute('SELECT COUNT(*) as count FROM orders');
@@ -277,6 +337,31 @@ export async function insertOrder(order: {
       now
     ]
   });
+
+  // Automatically deduct stock for this order if item is in inventory
+  try {
+    const pkgName = order.packageName?.trim();
+    if (pkgName) {
+      const match = await db.execute({
+        sql: 'SELECT id, name FROM inventory_items WHERE LOWER(name) = LOWER(?) LIMIT 1',
+        args: [pkgName]
+      });
+      if (match.rows.length > 0) {
+        const matchedItem = match.rows[0];
+        await recordInventoryLog({
+          itemId: String(matchedItem.id),
+          type: 'OUT',
+          quantity: 1,
+          reason: `Customer Order Placed / Dispatched (#${orderId})`,
+          referenceId: orderId,
+          performedBy: 'System (Order Flow)',
+          notes: `Customer: ${order.customerName} (${order.phone || order.email || 'N/A'})`
+        });
+      }
+    }
+  } catch (invErr) {
+    console.warn('[DB] Auto inventory deduction notice:', invErr);
+  }
 
   return getOrderById(orderId);
 }
@@ -491,7 +576,7 @@ export async function updateSessionHeartbeat(sessionId: string, addDurationSecon
   return true;
 }
 
-export async function getVisitorAnalytics(filterPreset: string = 'all') {
+export async function getVisitorAnalytics(filterPreset: string = 'all', customDate?: string) {
   await initDatabase();
   const now = new Date();
   const nowMs = now.getTime();
@@ -511,6 +596,8 @@ export async function getVisitorAnalytics(filterPreset: string = 'all') {
   } else if (filterPreset === '30days') {
     const thirtyDaysAgo = nowMs - (30 * 24 * 60 * 60 * 1000);
     filteredRows = allRows.filter(r => new Date(String(r.first_seen)).getTime() >= thirtyDaysAgo);
+  } else if (filterPreset === 'custom' && customDate) {
+    filteredRows = allRows.filter(r => String(r.first_seen || '').startsWith(customDate));
   }
 
   const liveCount = allRows.filter(r => {
@@ -601,3 +688,299 @@ export async function getVisitorAnalytics(filterPreset: string = 'all') {
     recentSessions
   };
 }
+
+// ----------------------------------------------------
+// INVENTORY & STOCK TRACKING (IN & OUT)
+// ----------------------------------------------------
+
+export interface InventoryItem {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  currentStock: number;
+  minThreshold: number;
+  unitCost: number;
+  totalIn?: number;
+  totalOut?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface InventoryLog {
+  id: number;
+  itemId: string;
+  itemName: string;
+  type: 'IN' | 'OUT';
+  quantity: number;
+  reason: string;
+  referenceId?: string;
+  performedBy: string;
+  notes?: string;
+  createdAt: string;
+}
+
+// Format an inventory row
+function formatInventoryItemRow(row: any): InventoryItem {
+  return {
+    id: String(row.id),
+    name: String(row.name),
+    sku: String(row.sku || ''),
+    category: String(row.category || 'Kit'),
+    currentStock: Number(row.current_stock || 0),
+    minThreshold: Number(row.min_threshold || 15),
+    unitCost: Number(row.unit_cost || 0),
+    createdAt: String(row.created_at || ''),
+    updatedAt: String(row.updated_at || '')
+  };
+}
+
+// Get all inventory items with computed in/out statistics
+export async function getInventoryOverview() {
+  await initDatabase();
+
+  const itemsRes = await db.execute('SELECT * FROM inventory_items ORDER BY name ASC');
+  const logsRes = await db.execute('SELECT * FROM inventory_logs ORDER BY id DESC LIMIT 200');
+
+  const logs: InventoryLog[] = logsRes.rows.map((r: any) => ({
+    id: Number(r.id),
+    itemId: String(r.item_id),
+    itemName: String(r.item_name),
+    type: (r.type === 'IN' ? 'IN' : 'OUT') as 'IN' | 'OUT',
+    quantity: Number(r.quantity || 0),
+    reason: String(r.reason || ''),
+    referenceId: r.reference_id ? String(r.reference_id) : undefined,
+    performedBy: String(r.performed_by || 'Admin'),
+    notes: r.notes ? String(r.notes) : '',
+    createdAt: String(r.created_at || '')
+  }));
+
+  // Aggregate in & out per item
+  const itemInMap: Record<string, number> = {};
+  const itemOutMap: Record<string, number> = {};
+
+  let totalProductsIn = 0;
+  let totalProductsOut = 0;
+
+  for (const log of logs) {
+    if (log.type === 'IN') {
+      itemInMap[log.itemId] = (itemInMap[log.itemId] || 0) + log.quantity;
+      totalProductsIn += log.quantity;
+    } else {
+      itemOutMap[log.itemId] = (itemOutMap[log.itemId] || 0) + log.quantity;
+      totalProductsOut += log.quantity;
+    }
+  }
+
+  // Also query total all-time in and out
+  const inSumRes = await db.execute("SELECT SUM(quantity) as total FROM inventory_logs WHERE type = 'IN'");
+  const outSumRes = await db.execute("SELECT SUM(quantity) as total FROM inventory_logs WHERE type = 'OUT'");
+  const allTimeIn = Number(inSumRes.rows[0]?.total || totalProductsIn);
+  const allTimeOut = Number(outSumRes.rows[0]?.total || totalProductsOut);
+
+  const items: InventoryItem[] = itemsRes.rows.map((r: any) => {
+    const item = formatInventoryItemRow(r);
+    item.totalIn = itemInMap[item.id] || 0;
+    item.totalOut = itemOutMap[item.id] || 0;
+    return item;
+  });
+
+  const totalCurrentStock = items.reduce((sum, it) => sum + it.currentStock, 0);
+  const lowStockItems = items.filter(it => it.currentStock <= it.minThreshold);
+
+  return {
+    items,
+    logs,
+    summary: {
+      totalCurrentStock,
+      totalProductsIn: allTimeIn,
+      totalProductsOut: allTimeOut,
+      lowStockCount: lowStockItems.length,
+      itemCount: items.length
+    }
+  };
+}
+
+// Add a Stock In or Stock Out Log and adjust current stock
+export async function recordInventoryLog(data: {
+  itemId: string;
+  type: 'IN' | 'OUT';
+  quantity: number;
+  reason: string;
+  referenceId?: string;
+  performedBy?: string;
+  notes?: string;
+}) {
+  await initDatabase();
+
+  const { itemId, type, quantity, reason, referenceId, performedBy = 'Admin', notes } = data;
+
+  if (quantity <= 0) {
+    throw new Error('Quantity must be greater than 0');
+  }
+
+  // Find item
+  const itemRes = await db.execute({
+    sql: 'SELECT * FROM inventory_items WHERE id = ? OR name = ? LIMIT 1',
+    args: [itemId, itemId]
+  });
+
+  if (itemRes.rows.length === 0) {
+    throw new Error(`Inventory item '${itemId}' not found`);
+  }
+
+  const item = itemRes.rows[0];
+  const currentStock = Number(item.current_stock || 0);
+  const realItemId = String(item.id);
+  const itemName = String(item.name);
+
+  // New stock computation
+  const newStock = type === 'IN' ? currentStock + quantity : Math.max(0, currentStock - quantity);
+  const now = new Date().toISOString();
+
+  // 1. Update item stock
+  await db.execute({
+    sql: 'UPDATE inventory_items SET current_stock = ?, updated_at = ? WHERE id = ?',
+    args: [newStock, now, realItemId]
+  });
+
+  // 2. Insert log entry
+  const logRes = await db.execute({
+    sql: `INSERT INTO inventory_logs (item_id, item_name, type, quantity, reason, reference_id, performed_by, notes, created_at)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    args: [
+      realItemId,
+      itemName,
+      type,
+      quantity,
+      reason || (type === 'IN' ? 'Stock In / Restock' : 'Stock Out / Dispatch'),
+      referenceId || '',
+      performedBy,
+      notes || '',
+      now
+    ]
+  });
+
+  return {
+    success: true,
+    itemId: realItemId,
+    itemName,
+    type,
+    quantity,
+    newStock,
+    logId: Number(logRes.lastInsertRowid)
+  };
+}
+
+// Create or update an inventory item
+export async function upsertInventoryItem(item: {
+  id?: string;
+  name: string;
+  sku?: string;
+  category?: string;
+  currentStock?: number;
+  minThreshold?: number;
+  unitCost?: number;
+}) {
+  await initDatabase();
+
+  const now = new Date().toISOString();
+  let id = item.id;
+
+  if (!id) {
+    id = `PROD-${Date.now().toString(36).toUpperCase()}`;
+  }
+
+  // Check if exists
+  const existing = await db.execute({
+    sql: 'SELECT * FROM inventory_items WHERE id = ? LIMIT 1',
+    args: [id]
+  });
+
+  if (existing.rows.length > 0) {
+    // Update
+    await db.execute({
+      sql: `UPDATE inventory_items SET
+              name = ?,
+              sku = ?,
+              category = ?,
+              current_stock = ?,
+              min_threshold = ?,
+              unit_cost = ?,
+              updated_at = ?
+            WHERE id = ?`,
+      args: [
+        item.name.trim(),
+        (item.sku || '').trim(),
+        (item.category || 'Kit').trim(),
+        Number(item.currentStock ?? existing.rows[0].current_stock),
+        Number(item.minThreshold ?? existing.rows[0].min_threshold),
+        Number(item.unitCost ?? existing.rows[0].unit_cost),
+        now,
+        id
+      ]
+    });
+  } else {
+    // Insert new item
+    const initialStock = Number(item.currentStock || 0);
+    await db.execute({
+      sql: `INSERT INTO inventory_items (id, name, sku, category, current_stock, min_threshold, unit_cost, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      args: [
+        id,
+        item.name.trim(),
+        (item.sku || '').trim(),
+        (item.category || 'Kit').trim(),
+        initialStock,
+        Number(item.minThreshold || 15),
+        Number(item.unitCost || 0),
+        now,
+        now
+      ]
+    });
+
+    // If initial stock was provided > 0, log an initial Stock In
+    if (initialStock > 0) {
+      await db.execute({
+        sql: `INSERT INTO inventory_logs (item_id, item_name, type, quantity, reason, reference_id, performed_by, notes, created_at)
+              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        args: [
+          id,
+          item.name.trim(),
+          'IN',
+          initialStock,
+          'Initial Opening Stock',
+          'INIT',
+          'Admin',
+          'Product catalog added',
+          now
+        ]
+      });
+    }
+  }
+
+  const updatedRes = await db.execute({
+    sql: 'SELECT * FROM inventory_items WHERE id = ? LIMIT 1',
+    args: [id]
+  });
+
+  return formatInventoryItemRow(updatedRes.rows[0]);
+}
+
+// Delete inventory item and related logs
+export async function deleteInventoryItem(id: string) {
+  await initDatabase();
+
+  await db.execute({
+    sql: 'DELETE FROM inventory_logs WHERE item_id = ?',
+    args: [id]
+  });
+
+  const res = await db.execute({
+    sql: 'DELETE FROM inventory_items WHERE id = ?',
+    args: [id]
+  });
+
+  return { success: res.rowsAffected > 0 };
+}
+

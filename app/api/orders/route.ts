@@ -3,19 +3,7 @@ import { getAllOrders, insertOrder, updateOrderInDb, deleteOrderFromDb } from '.
 import fs from 'fs';
 import path from 'path';
 
-const dataFilePath = path.join(process.cwd(), 'data', 'orders.json');
 
-// Background sync to JSON for file backup
-async function syncOrdersToJson() {
-  try {
-    const orders = await getAllOrders();
-    const dir = path.dirname(dataFilePath);
-    if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(dataFilePath, JSON.stringify(orders, null, 2));
-  } catch (e) {
-    // Silent backup error
-  }
-}
 
 // GET: Return all orders from SQLite
 export async function GET(request: Request) {
@@ -77,8 +65,6 @@ export async function POST(request: Request) {
       notes: notes || 'New online customer order.'
     });
 
-    syncOrdersToJson();
-
     return NextResponse.json({ success: true, order: newOrder, message: 'Order created successfully in database' });
   } catch (error: any) {
     console.error('Error submitting order to DB:', error);
@@ -101,8 +87,6 @@ export async function PATCH(request: Request) {
     if (!updated) {
       return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
     }
-
-    syncOrdersToJson();
 
     return NextResponse.json({ success: true, order: updated, message: 'Order updated successfully' });
   } catch (error: any) {
@@ -130,8 +114,6 @@ export async function DELETE(request: Request) {
     if (!success) {
       return NextResponse.json({ success: false, message: 'Order not found' }, { status: 404 });
     }
-
-    syncOrdersToJson();
 
     return NextResponse.json({ success: true, message: 'Order deleted successfully' });
   } catch (error: any) {

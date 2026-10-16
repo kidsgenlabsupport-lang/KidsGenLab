@@ -7,8 +7,9 @@ export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
     const preset = searchParams.get('preset') || 'all';
+    const date = searchParams.get('date') || undefined;
 
-    const analytics = await getVisitorAnalytics(preset);
+    const analytics = await getVisitorAnalytics(preset, date);
 
     return NextResponse.json(analytics, {
       headers: {

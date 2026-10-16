@@ -11,35 +11,38 @@ interface ParentNotification {
   avatarColor: string;
 }
 
-// Exactly 4 "Let's Play" interactive options for the 4 notification cycles
-const LETS_PLAY_NOTIFICATIONS: { name: string; section: string; avatarColor: string; timeAgo: string }[] = [
-  {
-    name: "Rajesh Sharma",
-    section: "Let's Play: Budget Buddy",
-    avatarColor: "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
-    timeAgo: "Just now"
-  },
-  {
-    name: "Priya Venkatesh",
-    section: "Let's Play: Future Fortune Builder",
-    avatarColor: "linear-gradient(135deg, #ec4899 0%, #be185d 100%)",
-    timeAgo: "2 mins ago"
-  },
-  {
-    name: "Vikram Malhotra",
-    section: "Let's Play: Let's Trade",
-    avatarColor: "linear-gradient(135deg, #10b981 0%, #047857 100%)",
-    timeAgo: "4 mins ago"
-  },
-  {
-    name: "Sunita Rao",
-    section: "Let's Play: Depreciation",
-    avatarColor: "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
-    timeAgo: "7 mins ago"
-  }
+const ALL_NAMES = [
+  "Sowmiya", "Nivetha", "Subramani", "Varun", "Kesavan", "Janani", "Suba", "Wahab", "Asik", "Gopi", "Karan", "Ragavan",
+  "Rajesh", "Priya", "Vikram", "Sunita", "Aarti", "Abhinav", "Aditi", "Aditya", "Ajay", "Akash", "Akhil", "Amir",
+  "Amrita", "Anand", "Ananya", "Anil", "Anjali", "Ankit", "Anshul", "Anu", "Anubhav", "Aparna", "Arjun", "Asha", 
+  "Ashish", "Ashok", "Avinash", "Balaji", "Bharat", "Bhavna", "Bhuvana", "Chetan", "Deepa", "Deepak", "Dev", "Dinesh",
+  "Divya", "Ganesh", "Gaurav", "Gautam", "Geeta", "Gopal", "Hari", "Harish", "Harsha", "Hema", "Himanshu", "Isha", 
+  "Ishaan", "Jatin", "Jaya", "Kalyan", "Kamal", "Kamini", "Karthik", "Kavita", "Kiran", "Kishore", "Krish",
+  "Krishna", "Kunal", "Lakshmi", "Lalit", "Lata", "Lavanya", "Laxmi", "Madhav", "Madhu", "Mahesh", "Manish", 
+  "Manjula", "Manoj", "Maya", "Meena", "Meera", "Milind", "Mohan", "Mohit", "Mona", "Mukesh", "Nalini", "Namrata", 
+  "Nandini", "Narayan", "Naveen", "Navya", "Neha", "Nidhi", "Nikhil", "Nilam", "Nilesh", "Nitin", "Nitya", 
+  "Pankaj", "Parth", "Pavitra"
 ];
 
+const SECTIONS = [
+  "Let's Play: Budget Buddy",
+  "Let's Play: Future Fortune Builder",
+  "Let's Play: Let's Trade",
+  "Let's Play: Depreciation"
+];
+
+const GRADIENTS = [
+  "linear-gradient(135deg, #0ea5e9 0%, #2563eb 100%)",
+  "linear-gradient(135deg, #ec4899 0%, #be185d 100%)",
+  "linear-gradient(135deg, #10b981 0%, #047857 100%)",
+  "linear-gradient(135deg, #f59e0b 0%, #d97706 100%)",
+  "linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%)"
+];
+
+const TIME_AGOS = ["Just now", "2 mins ago", "4 mins ago", "7 mins ago", "1 min ago", "3 mins ago"];
+
 const MAX_POPUP_COUNT = 4;
+const SHOWN_NAMES_KEY = "visitor_tracker_shown_names";
 
 export default function VisitorTracker() {
   const [currentNotification, setCurrentNotification] = useState<ParentNotification | null>(null);
@@ -49,22 +52,56 @@ export default function VisitorTracker() {
 
   useEffect(() => {
     let isCancelled = false;
+    
+    // Retrieve previously shown names
+    const getShownNames = (): string[] => {
+      try {
+        const stored = localStorage.getItem(SHOWN_NAMES_KEY);
+        return stored ? JSON.parse(stored) : [];
+      } catch (e) {
+        return [];
+      }
+    };
+    
+    // Get a unique name that hasn't been shown yet
+    const getUniqueName = (): string => {
+      const shownNames = getShownNames();
+      const availableNames = ALL_NAMES.filter(name => !shownNames.includes(name));
+      
+      // If we exhausted all names, reset the list
+      if (availableNames.length === 0) {
+        localStorage.removeItem(SHOWN_NAMES_KEY);
+        const name = ALL_NAMES[Math.floor(Math.random() * ALL_NAMES.length)];
+        localStorage.setItem(SHOWN_NAMES_KEY, JSON.stringify([name]));
+        return name;
+      }
+      
+      const randomIndex = Math.floor(Math.random() * availableNames.length);
+      const chosenName = availableNames[randomIndex];
+      
+      // Save it to shown names
+      localStorage.setItem(SHOWN_NAMES_KEY, JSON.stringify([...shownNames, chosenName]));
+      return chosenName;
+    };
 
     const scheduleNext = (delayMs: number) => {
       timeoutRef.current = setTimeout(() => {
         if (isCancelled) return;
         if (triggerCountRef.current >= MAX_POPUP_COUNT) return;
 
-        const index = triggerCountRef.current;
-        const data = LETS_PLAY_NOTIFICATIONS[index];
         triggerCountRef.current += 1;
+        
+        const randomName = getUniqueName();
+        const randomSection = SECTIONS[Math.floor(Math.random() * SECTIONS.length)];
+        const randomGradient = GRADIENTS[Math.floor(Math.random() * GRADIENTS.length)];
+        const randomTimeAgo = TIME_AGOS[Math.floor(Math.random() * TIME_AGOS.length)];
 
         setCurrentNotification({
-          id: `notif-${index}-${Date.now()}`,
-          name: data.name,
-          section: data.section,
-          timeAgo: data.timeAgo,
-          avatarColor: data.avatarColor
+          id: `notif-${triggerCountRef.current}-${Date.now()}`,
+          name: randomName,
+          section: randomSection,
+          timeAgo: randomTimeAgo,
+          avatarColor: randomGradient
         });
 
         // Visible for 4.5 seconds
@@ -140,14 +177,14 @@ export default function VisitorTracker() {
 
             {/* Clean Info: Name • Section (Let's Play...) • Minutes Ago */}
             <div style={{ display: "flex", flexDirection: "column", gap: "1px", flexGrow: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "0.88rem", fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <div className="visitor-tracker-name" style={{ fontWeight: 800, color: "#0f172a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
                 {currentNotification.name}
               </div>
 
-              <div style={{ fontSize: "0.78rem", color: "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: "5px", flexWrap: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.2 }}>
-                <span style={{ color: "#047857", fontWeight: 700, whiteSpace: "nowrap" }}>{currentNotification.section}</span>
+              <div className="visitor-tracker-meta" style={{ color: "#059669", fontWeight: 600, display: "flex", alignItems: "center", gap: "5px", flexWrap: "nowrap", overflow: "hidden", textOverflow: "ellipsis", lineHeight: 1.2 }}>
+                <span className="visitor-tracker-section" style={{ color: "#047857", fontWeight: 700, whiteSpace: "nowrap" }}>{currentNotification.section}</span>
                 <span style={{ color: "#cbd5e1" }}>•</span>
-                <span style={{ color: "#64748b", fontWeight: 500, fontSize: "0.72rem", whiteSpace: "nowrap" }}>{currentNotification.timeAgo}</span>
+                <span className="visitor-tracker-time" style={{ color: "#64748b", fontWeight: 500, whiteSpace: "nowrap" }}>{currentNotification.timeAgo}</span>
               </div>
             </div>
           </motion.div>
@@ -175,25 +212,47 @@ export default function VisitorTracker() {
           border-radius: 50%;
           font-size: 1.15rem;
         }
+        .visitor-tracker-name {
+          font-size: 0.88rem;
+        }
+        .visitor-tracker-meta {
+          font-size: 0.78rem;
+        }
+        .visitor-tracker-section {
+          font-size: inherit;
+        }
+        .visitor-tracker-time {
+          font-size: 0.72rem;
+        }
 
         @media (max-width: 767px) {
           .visitor-tracker-container {
-            bottom: 84px !important;
-            left: 12px !important;
-            right: 12px !important;
-            width: calc(100vw - 24px) !important;
-            max-width: calc(100vw - 24px) !important;
+            bottom: 24px !important;
+            left: 50% !important;
+            transform: translateX(-50%);
+            width: 90vw !important;
+            max-width: 320px !important;
           }
           .visitor-tracker-card {
-            height: 50px !important;
-            padding: 5px 14px 5px 6px !important;
-            gap: 10px !important;
-            border-radius: 9999px !important;
+            height: 46px !important;
+            padding: 4px 12px 4px 6px !important;
+            gap: 8px !important;
+            border-radius: 12px !important; /* Proper border radius for mobile */
           }
           .visitor-tracker-dp {
-            width: 36px !important;
-            height: 36px !important;
-            font-size: 1rem !important;
+            width: 32px !important;
+            height: 32px !important;
+            font-size: 0.9rem !important;
+            border-radius: 8px !important;
+          }
+          .visitor-tracker-name {
+            font-size: 0.8rem !important;
+          }
+          .visitor-tracker-meta {
+            font-size: 0.65rem !important;
+          }
+          .visitor-tracker-time {
+            font-size: 0.6rem !important;
           }
         }
       `}</style>

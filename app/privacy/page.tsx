@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, ShieldCheck, Lock, Mail, Phone, FileText, CheckCircle2 } from "lucide-react";
+import { ArrowLeft, ShieldCheck, Lock, Mail, Phone, FileText, CheckCircle2, MapPin } from "lucide-react";
 
 export default function PrivacyPolicyPage() {
   return (
@@ -58,7 +58,7 @@ export default function PrivacyPolicyPage() {
             Privacy Policy &amp; Terms
           </h1>
           <p style={{ color: "#64748b", fontSize: "0.92rem", margin: 0 }}>
-            KidsGen Lab • Official rules for website orders, shipping, and parent-child data privacy
+            KidsGenLab • Official rules for website orders, shipping, and parent-child data privacy
           </p>
         </div>
 
@@ -68,7 +68,7 @@ export default function PrivacyPolicyPage() {
             <Lock size={18} /> Our Simple Data Promise
           </h2>
           <p style={{ color: "#334155", fontSize: "0.90rem", lineHeight: 1.6, margin: 0 }}>
-            At <strong>KidsGen Lab</strong>, we respect your family&apos;s privacy. We collect only parent details necessary to deliver physical educational kits to your doorstep across India. We <strong>never sell or monetize your data</strong>, and all payments are secured via Razorpay PCI-DSS encryption.
+            At <strong>KidsGenLab</strong>, we respect your family&apos;s privacy. We collect only parent details necessary to deliver physical educational kits to your doorstep across India. We <strong>never sell or monetize your data</strong>, and all payments are secured via Razorpay PCI-DSS encryption.
           </p>
         </div>
 
@@ -112,7 +112,7 @@ export default function PrivacyPolicyPage() {
               4. Damaged Items &amp; Replacement Policy
             </h3>
             <p style={{ margin: 0 }}>
-              If your book or learning materials arrive damaged or defective during transit, send a photo to our WhatsApp support (+91 98765 43210) within 7 days of package delivery for a free immediate replacement parcel.
+              If your book or learning materials arrive damaged or defective during transit, send a photo to our WhatsApp support (+91 8300297197) within 7 days of package delivery for a free immediate replacement parcel.
             </p>
           </section>
 
@@ -123,11 +123,20 @@ export default function PrivacyPolicyPage() {
             <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "10px" }}>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Mail size={16} color="#000000" />
-                <span>Email: <strong>support@kidsgenlab.com</strong></span>
+                <span>Email: <strong>kidsgenlab@gmail.com</strong></span>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
                 <Phone size={16} color="#000000" />
-                <span>WhatsApp / Phone: <strong>+91 98765 43210</strong> (24/7 Assistance)</span>
+                <span>WhatsApp / Phone: <strong>+91 8300297197</strong> (24/7 Assistance)</span>
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-start", gap: "8px", marginTop: "4px" }}>
+                <MapPin size={16} color="#000000" style={{ flexShrink: 0, marginTop: "3px" }} />
+                <address style={{ fontStyle: "normal", fontSize: "0.90rem", color: "#334155", lineHeight: 1.55 }}>
+                  <strong>KIDSGENLAB</strong><br />
+                  14a, ADHILAKSHMI NAGAR, MATHULAMPETT<br />
+                  Block- 1, MARRIYAMMAN KOVIL MATHULAMPETT<br />
+                  KUMBAKONAM, TAMIL NADU - 612001, India
+                </address>
               </div>
             </div>
           </section>

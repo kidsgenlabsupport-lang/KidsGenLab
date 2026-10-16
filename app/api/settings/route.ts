@@ -7,7 +7,7 @@ const settingsFilePath = path.join(process.cwd(), 'data', 'site_settings.json');
 
 const defaultSettings = {
   general: {
-    siteName: "KidsGen Lab",
+    siteName: "KidsGenLab",
     supportEmail: "support@kidsgenlab.com",
     announcementEnabled: true,
     announcementText: "🎉 SALE IS LIVE: Save up to 60% on all Smart Kids Kits today!"
@@ -22,7 +22,7 @@ const defaultSettings = {
   },
   whatsapp: {
     supportNumber: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "918300297197",
-    defaultMessage: "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
+    defaultMessage: "Hi KidsGenLab! I am interested in ordering the Smart Money kit for my child. Please help!",
     autoNotificationEnabled: true,
     twilioEnabled: false
   },

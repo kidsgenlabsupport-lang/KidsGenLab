@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
  * Helper to get a conversational reply from Google's Gemini AI API.
  */
 async function getGeminiResponse(userText: string, geminiApiKey: string | undefined): Promise<string> {
-  let botResponse = "Thank you for reaching out to KidsGen Lab! 🚀 We have received your message and our mentoring team will reply to you shortly.";
+  let botResponse = "Thank you for reaching out to KidsGenLab! 🚀 We have received your message and our mentoring team will reply to you shortly.";
 
   if (!geminiApiKey) {
     console.warn("Missing GEMINI_API_KEY environment variable. Using fallback message.");
@@ -76,8 +76,8 @@ async function getGeminiResponse(userText: string, geminiApiKey: string | undefi
 
   try {
     const systemInstruction = 
-      "You are a friendly, encouraging, and brilliant AI mentor for KidsGen Lab (originally KidsGen Lab). " +
-      "KidsGen Lab is an educational system teaching kids ages 7-14 real-world entrepreneurship, compound savings, budgeting, and value exchange (bartering). " +
+      "You are a friendly, encouraging, and brilliant AI mentor for KidsGenLab (originally KidsGenLab). " +
+      "KidsGenLab is an educational system teaching kids ages 7-14 real-world entrepreneurship, compound savings, budgeting, and value exchange (bartering). " +
       "Your tone must be cheerful, highly positive, and simple enough for kids, yet professional enough for parents. " +
       "Keep answers concise (maximum 3 short paragraphs). Emojis are encouraged! " +
       "Do NOT use markdown that is unsupported in WhatsApp (use only *bold* like *this* and _italics_ like _this_). " +
@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
       // If it is a sandbox join message, welcome them warmly
       let botResponse = "";
       if (bodyText.toLowerCase().trim().startsWith("join ")) {
-        botResponse = "Welcome to the *KidsGen Lab* AI Assistant sandbox! 🚀\n\nI'm your AI mentor. You are now connected! Ask me any questions you have about teaching kids entrepreneurship, compound savings, budgeting, or our 3-jar system. How can I help you today?";
+        botResponse = "Welcome to the *KidsGenLab* AI Assistant sandbox! 🚀\n\nI'm your AI mentor. You are now connected! Ask me any questions you have about teaching kids entrepreneurship, compound savings, budgeting, or our 3-jar system. How can I help you today?";
       } else {
         // Query Gemini AI for response
         botResponse = await getGeminiResponse(bodyText, geminiApiKey);

@@ -1,6 +1,6 @@
 {
   "general": {
-    "siteName": "KidsGen Lab",
+    "siteName": "KidsGenLab",
     "supportEmail": "kidsgenlab@gmail.com",
     "announcementEnabled": true,
     "announcementText": "🎉 SALE IS LIVE: Save up to 60% on all Smart Kids Kits today!"
@@ -15,7 +15,7 @@
   },
   "whatsapp": {
     "supportNumber": "918300297197",
-    "defaultMessage": "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
+    "defaultMessage": "Hi KidsGenLab! I am interested in ordering the Smart Money kit for my child. Please help!",
     "autoNotificationEnabled": true,
     "twilioEnabled": false
   },

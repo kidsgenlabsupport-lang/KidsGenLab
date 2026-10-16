@@ -58,7 +58,13 @@ import {
   Globe,
   Radio,
   Monitor,
-  Smartphone
+  Smartphone,
+  Boxes,
+  Truck,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  PackageCheck,
+  Archive
 } from 'lucide-react';
 
 interface Order {
@@ -66,17 +72,51 @@ interface Order {
   customerName: string;
   email: string;
   phone: string;
-  city: string;
-  state?: string;
+  flatNo?: string;
   address?: string;
+  landmark?: string;
+  city: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
   packageName: string;
   price: number;
   currency: string;
   status: 'Completed' | 'Pending' | 'Processing' | 'Cancelled';
   paymentMethod: string;
+  paymentId?: string;
+  razorpayOrderId?: string;
   createdAt: string;
+  updatedAt?: string;
   notes: string;
   affiliateRef?: string;
+}
+
+interface InventoryItemType {
+  id: string;
+  name: string;
+  sku: string;
+  category: string;
+  currentStock: number;
+  minThreshold: number;
+  unitCost: number;
+  totalIn?: number;
+  totalOut?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface InventoryLogType {
+  id: number;
+  itemId: string;
+  itemName: string;
+  type: 'IN' | 'OUT';
+  quantity: number;
+  reason: string;
+  referenceId?: string;
+  performedBy: string;
+  notes?: string;
+  createdAt: string;
 }
 
 interface AnalyticsData {
@@ -118,7 +158,7 @@ interface AnalyticsData {
   }>;
 }
 
-type NavSection = 'overview' | 'traffic' | 'orders' | 'payment' | 'whatsapp' | 'affiliates' | 'pricing' | 'theme' | 'content';
+type NavSection = 'overview' | 'traffic' | 'orders' | 'inventory' | 'database' | 'affiliates' | 'content';
 
 export default function AdminPage() {
   const [isMounted, setIsMounted] = useState<boolean>(false);
@@ -128,16 +168,71 @@ export default function AdminPage() {
   const [pinInput, setPinInput] = useState<string>('');
   const [pinError, setPinError] = useState<string>('');
 
+  // Database Security State
+  const [isDbUnlocked, setIsDbUnlocked] = useState<boolean>(false);
+  const [dbPinInput, setDbPinInput] = useState<string>('');
+  const [dbPinError, setDbPinError] = useState<string>('');
+
   // Navigation State
   const [currentSection, setCurrentSection] = useState<NavSection>('overview');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
 
+  // Inventory & Stock Tracking State (Product In & Out)
+  const [inventoryItems, setInventoryItems] = useState<InventoryItemType[]>([]);
+  const [inventoryLogs, setInventoryLogs] = useState<InventoryLogType[]>([]);
+  const [inventorySummary, setInventorySummary] = useState<{
+    totalCurrentStock: number;
+    totalProductsIn: number;
+    totalProductsOut: number;
+    lowStockCount: number;
+    itemCount: number;
+  }>({
+    totalCurrentStock: 0,
+    totalProductsIn: 0,
+    totalProductsOut: 0,
+    lowStockCount: 0,
+    itemCount: 0
+  });
+  const [inventoryLoading, setInventoryLoading] = useState<boolean>(false);
+  const [inventoryTab, setInventoryTab] = useState<'products' | 'ledger'>('products');
+  const [inventoryViewMode, setInventoryViewMode] = useState<'table' | 'cards'>('table');
+  const [stockLogFilter, setStockLogFilter] = useState<'ALL' | 'IN' | 'OUT'>('ALL');
+  const [stockLogSearch, setStockLogSearch] = useState<string>('');
+  const [stockLogItemFilter, setStockLogItemFilter] = useState<string>('ALL');
+
+  // Stock Modals State
+  const [showStockInModal, setShowStockInModal] = useState<boolean>(false);
+  const [showStockOutModal, setShowStockOutModal] = useState<boolean>(false);
+  const [showAddItemModal, setShowAddItemModal] = useState<boolean>(false);
+  const [selectedStockItem, setSelectedStockItem] = useState<InventoryItemType | null>(null);
+
+  // Stock Form States
+  const [stockActionForm, setStockActionForm] = useState({
+    itemId: '',
+    quantity: 10,
+    reason: 'Supplier Restock Delivery',
+    referenceId: '',
+    performedBy: 'Admin',
+    notes: ''
+  });
+
+  const [newItemForm, setNewItemForm] = useState({
+    name: '',
+    sku: '',
+    category: 'Smart Money Kit',
+    currentStock: 50,
+    minThreshold: 15,
+    unitCost: 499
+  });
+
   // Visitor Traffic & Duration Analytics State
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [analyticsLoading, setAnalyticsLoading] = useState<boolean>(false);
-  const [analyticsPreset, setAnalyticsPreset] = useState<'all' | 'today' | '7days' | '30days'>('all');
+  const [analyticsPreset, setAnalyticsPreset] = useState<'all' | 'today' | '7days' | '30days' | 'custom'>('all');
+  const [analyticsCustomDate, setAnalyticsCustomDate] = useState<string>('');
   const [autoRefreshTraffic, setAutoRefreshTraffic] = useState<boolean>(true);
   const [trafficSearchTerm, setTrafficSearchTerm] = useState<string>('');
+  const [affiliateSearchTerm, setAffiliateSearchTerm] = useState<string>('');
 
   // Orders State & Date Filters
   const [orders, setOrders] = useState<Order[]>([]);
@@ -154,7 +249,7 @@ export default function AdminPage() {
   // Settings State
   const [settings, setSettings] = useState<any>({
     general: {
-      siteName: "KidsGen Lab",
+      siteName: "KidsGenLab",
       supportEmail: "support@kidsgenlab.com",
       announcementEnabled: true,
       announcementText: "🎉 SALE IS LIVE: Save up to 60% on all Smart Kids Kits today!"
@@ -169,7 +264,7 @@ export default function AdminPage() {
     },
     whatsapp: {
       supportNumber: "918300297197",
-      defaultMessage: "Hi KidsGen Lab! I am interested in ordering the Smart Money kit for my child. Please help!",
+      defaultMessage: "Hi KidsGenLab! I am interested in ordering the Smart Money kit for my child. Please help!",
       autoNotificationEnabled: true,
       provider: "meta",
       meta: {
@@ -187,7 +282,7 @@ export default function AdminPage() {
         url: "",
         apiKey: ""
       },
-      messageTemplate: `🎉 *Congratulations {customer_name}!* 🚀\n\nYour order for *{package_name}* (*#{order_id}*) is *CONFIRMED & PAID*!\n\n💰 *Amount Paid:* ₹{amount}\n📦 *Status:* Being packed for priority shipping\n🚚 *Delivery:* 3–5 business days across India\n\nNeed any assistance? Reply to this message or contact support at +{support_number}.\n\nThank you for choosing *KidsGen Lab* to empower your child's financial intelligence! 🌟`
+      messageTemplate: `🎉 *Congratulations {customer_name}!* 🚀\n\nYour order for *{package_name}* (*#{order_id}*) is *CONFIRMED & PAID*!\n\n💰 *Amount Paid:* ₹{amount}\n📦 *Status:* Being packed for priority shipping\n🚚 *Delivery:* 3–5 business days across India\n\nNeed any assistance? Reply to this message or contact support at +{support_number}.\n\nThank you for choosing *KidsGenLab* to empower your child's financial intelligence! 🌟`
     },
     pricing: {
       solo: { name: "Starter Saver Kit", price: 1199, originalPrice: 1999, tagline: "The Irresistible Sweet Spot (Save 40%!)" },
@@ -248,15 +343,169 @@ export default function AdminPage() {
       fetchOrders();
       fetchSettings();
       fetchAnalytics();
+      fetchInventory();
     } else {
       setPinError('Incorrect Security PIN. Access Denied.');
     }
   };
 
-  const fetchAnalytics = async (preset = analyticsPreset) => {
+  const fetchInventory = async () => {
+    setInventoryLoading(true);
+    try {
+      const res = await fetch('/api/inventory');
+      const data = await res.json();
+      if (data.success) {
+        setInventoryItems(data.items || []);
+        setInventoryLogs(data.logs || []);
+        if (data.summary) {
+          setInventorySummary(data.summary);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to fetch inventory:', err);
+    } finally {
+      setInventoryLoading(false);
+    }
+  };
+
+  const handleRecordStockAction = async (type: 'IN' | 'OUT') => {
+    if (!stockActionForm.itemId) {
+      alert('Please select a product');
+      return;
+    }
+    if (stockActionForm.quantity <= 0) {
+      alert('Quantity must be greater than 0');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'log',
+          itemId: stockActionForm.itemId,
+          type,
+          quantity: Number(stockActionForm.quantity),
+          reason: stockActionForm.reason,
+          referenceId: stockActionForm.referenceId,
+          performedBy: stockActionForm.performedBy || 'Admin',
+          notes: stockActionForm.notes
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchInventory();
+        setShowStockInModal(false);
+        setShowStockOutModal(false);
+        setStockActionForm({
+          itemId: '',
+          quantity: 10,
+          reason: 'Supplier Restock Delivery',
+          referenceId: '',
+          performedBy: 'Admin',
+          notes: ''
+        });
+      } else {
+        alert(data.message || 'Failed to update stock');
+      }
+    } catch (err) {
+      console.error('Stock action error:', err);
+      alert('Network error while recording stock movement.');
+    }
+  };
+
+  const handleSaveNewItem = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItemForm.name.trim()) {
+      alert('Product name is required');
+      return;
+    }
+
+    try {
+      const res = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'item',
+          name: newItemForm.name.trim(),
+          sku: newItemForm.sku.trim(),
+          category: newItemForm.category.trim(),
+          currentStock: Number(newItemForm.currentStock),
+          minThreshold: Number(newItemForm.minThreshold),
+          unitCost: Number(newItemForm.unitCost)
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        await fetchInventory();
+        setShowAddItemModal(false);
+        setNewItemForm({
+          name: '',
+          sku: '',
+          category: 'Smart Money Kit',
+          currentStock: 50,
+          minThreshold: 15,
+          unitCost: 499
+        });
+      } else {
+        alert(data.message || 'Failed to save product');
+      }
+    } catch (err) {
+      console.error('Save item error:', err);
+      alert('Network error while saving product.');
+    }
+  };
+
+  const handleDeleteInventoryItem = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to remove '${name}' and its stock tracking logs?`)) return;
+    try {
+      const res = await fetch(`/api/inventory?id=${encodeURIComponent(id)}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (data.success) {
+        await fetchInventory();
+      } else {
+        alert(data.message || 'Failed to delete product');
+      }
+    } catch (err) {
+      console.error('Delete item error:', err);
+    }
+  };
+
+  const handleExportInventoryCSV = () => {
+    if (inventoryLogs.length === 0) {
+      alert('No inventory stock movement records found to export.');
+      return;
+    }
+
+    const headers = ['Log ID', 'Timestamp', 'Product Name', 'Item ID', 'Movement Type', 'Quantity', 'Reason / Event', 'Reference ID', 'Recorded By', 'Notes'];
+    const rows = inventoryLogs.map(l => [
+      l.id,
+      `"${new Date(l.createdAt).toLocaleString('en-IN')}"`,
+      `"${(l.itemName || '').replace(/"/g, '""')}"`,
+      `"${l.itemId}"`,
+      l.type === 'IN' ? 'STOCK_IN (Received)' : 'STOCK_OUT (Dispatched)',
+      l.quantity,
+      `"${(l.reason || '').replace(/"/g, '""')}"`,
+      `"${(l.referenceId || '').replace(/"/g, '""')}"`,
+      `"${(l.performedBy || 'Admin').replace(/"/g, '""')}"`,
+      `"${(l.notes || '').replace(/"/g, '""')}"`
+    ]);
+
+    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement('a');
+    link.setAttribute('href', encodedUri);
+    link.setAttribute('download', `kidzmoney_inventory_in_out_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const fetchAnalytics = async (preset = analyticsPreset, customDateStr = analyticsCustomDate) => {
     setAnalyticsLoading(true);
     try {
-      const res = await fetch(`/api/analytics/stats?preset=${preset}`);
+      const res = await fetch(`/api/analytics/stats?preset=${preset}&date=${customDateStr}`);
       const data = await res.json();
       if (data && typeof data === 'object') {
         setAnalyticsData(data);
@@ -270,14 +519,15 @@ export default function AdminPage() {
 
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetchAnalytics(analyticsPreset);
+    fetchAnalytics(analyticsPreset, analyticsCustomDate);
+    fetchInventory();
 
     if (!autoRefreshTraffic) return;
     const interval = setInterval(() => {
-      fetchAnalytics(analyticsPreset);
+      fetchAnalytics(analyticsPreset, analyticsCustomDate);
     }, 8000);
     return () => clearInterval(interval);
-  }, [isAuthenticated, analyticsPreset, autoRefreshTraffic]);
+  }, [isAuthenticated, analyticsPreset, autoRefreshTraffic, analyticsCustomDate]);
 
   const fetchOrders = async () => {
     setOrdersLoading(true);
@@ -574,7 +824,7 @@ export default function AdminPage() {
             <ShieldCheck style={{ width: '32px', height: '32px', strokeWidth: 2.5 }} />
           </div>
 
-          <h1 className="admin-pin-title">KidsGen Lab Admin</h1>
+          <h1 className="admin-pin-title">KidsGenLab Admin</h1>
           <p className="admin-pin-sub">Store Operations & Realtime Controls</p>
 
           <form onSubmit={handlePinSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }} suppressHydrationWarning={true}>
@@ -629,13 +879,11 @@ export default function AdminPage() {
 
   const navItems = [
     { id: 'overview', label: 'Overview', icon: LayoutDashboard, desc: 'Sales metrics & fast shortcuts' },
-    { id: 'traffic', label: 'Visitor Traffic & Duration', icon: Users, desc: 'Live visitors, time spent on website & traffic sources', badge: analyticsData?.liveCount ? `${analyticsData.liveCount} Live` : undefined },
-    { id: 'orders', label: 'Orders & Deliveries', icon: Package, desc: 'Search buyers, status & CSV export', badge: orders.length },
-    { id: 'payment', label: 'Payment Gateway', icon: CreditCard, desc: 'Razorpay Live/Test mode & API keys' },
-    { id: 'whatsapp', label: 'WhatsApp & Support', icon: MessageSquare, desc: 'Customer support number & greeting' },
+    { id: 'traffic', label: 'Visitor Traffic & Duration', icon: Users, desc: 'Live visitors, time spent on website & traffic sources' },
+    { id: 'orders', label: 'Orders & Deliveries', icon: Package, desc: 'Search buyers, status & CSV export' },
+    { id: 'inventory', label: 'Stock Tracking (In / Out)', icon: Boxes, desc: 'Incoming restocks, outgoing shipments & stock ledger' },
+    { id: 'database', label: 'Database & Records', icon: Layers, desc: 'Secure database tables' },
     { id: 'affiliates', label: 'Creator & Referral Links', icon: Share2, desc: '1-Click creator referral links' },
-    { id: 'pricing', label: 'Prices & Promo Banner', icon: Tag, desc: 'Update kit pricing & sale announcement' },
-    { id: 'theme', label: 'Custom CSS & Theme', icon: Palette, desc: 'Customize website colors & inject custom CSS stored in DB' },
     { id: 'content', label: 'Store Content & Info', icon: FileText, desc: 'Brand name, support email & identity' },
   ];
 
@@ -652,7 +900,7 @@ export default function AdminPage() {
             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
               <div className="admin-brand-logo-pill">K</div>
               <div>
-                <h2 style={{ fontSize: '0.92rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>KidsGen Lab</h2>
+                <h2 style={{ fontSize: '0.92rem', fontWeight: 900, color: '#ffffff', lineHeight: 1.2 }}>KidsGenLab</h2>
                 <span style={{ fontSize: '0.66rem', fontWeight: 800, color: '#71717a', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Admin Console</span>
               </div>
             </div>
@@ -684,9 +932,6 @@ export default function AdminPage() {
                     <Icon className="admin-nav-icon" style={{ width: '16px', height: '16px' }} />
                     <span>{item.label}</span>
                   </div>
-                  {item.badge !== undefined && (
-                    <span className="admin-nav-badge">{item.badge}</span>
-                  )}
                 </button>
               );
             })}
@@ -858,16 +1103,18 @@ export default function AdminPage() {
                     <p style={{ fontSize: '0.74rem', color: '#71717a', lineHeight: 1.4 }}>Search buyers, inspect shipping addresses, update fulfillment status, and export CSVs.</p>
                   </div>
 
+                  <div className="admin-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentSection('inventory')}>
+                    <Boxes style={{ width: '24px', height: '24px', marginBottom: '10px', color: '#10b981' }} />
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '4px' }}>Stock & Order Tracking (In / Out)</h3>
+                    <p style={{ fontSize: '0.74rem', color: '#71717a', lineHeight: 1.4 }}>
+                      {inventorySummary.totalCurrentStock} units on hand. Track {inventorySummary.totalProductsIn} incoming restocks & {inventorySummary.totalProductsOut} outgoing dispatches.
+                    </p>
+                  </div>
+
                   <div className="admin-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentSection('affiliates')}>
                     <Share2 style={{ width: '24px', height: '24px', marginBottom: '10px' }} />
                     <h3 style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '4px' }}>Creator Referral Links</h3>
                     <p style={{ fontSize: '0.74rem', color: '#71717a', lineHeight: 1.4 }}>Generate 1-click trackable campaign URLs for Instagram and YouTube influencer partners.</p>
-                  </div>
-
-                  <div className="admin-card" style={{ cursor: 'pointer' }} onClick={() => setCurrentSection('pricing')}>
-                    <Tag style={{ width: '24px', height: '24px', marginBottom: '10px' }} />
-                    <h3 style={{ fontSize: '0.95rem', fontWeight: 900, marginBottom: '4px' }}>Pricing & Announcement</h3>
-                    <p style={{ fontSize: '0.74rem', color: '#71717a', lineHeight: 1.4 }}>Control Starter, Achiever & Family bundle live prices and marquee banner text.</p>
                   </div>
                 </div>
 
@@ -942,6 +1189,7 @@ export default function AdminPage() {
                           { id: 'today', label: 'Today' },
                           { id: '7days', label: 'Last 7 Days' },
                           { id: '30days', label: 'Last 30 Days' },
+                          { id: 'custom', label: 'Custom Date' },
                         ].map(p => (
                           <button
                             key={p.id}
@@ -963,6 +1211,18 @@ export default function AdminPage() {
                           </button>
                         ))}
                       </div>
+
+                        <input
+                          type="date"
+                          value={analyticsCustomDate}
+                          onChange={(e) => {
+                            setAnalyticsCustomDate(e.target.value);
+                            if (e.target.value) setAnalyticsPreset('custom');
+                          }}
+                          className="admin-input"
+                          style={{ padding: '6px 12px', width: '140px', fontSize: '0.72rem' }}
+                          title="Filter by specific date"
+                        />
 
                       {/* Auto Refresh Toggle */}
                       <button
@@ -1179,8 +1439,8 @@ export default function AdminPage() {
                     }
 
                     return (
-                      <div style={{ overflowX: 'auto' }}>
-                        <table className="admin-table">
+                      <div className="admin-table-container">
+                        <table className="admin-table-root">
                           <thead>
                             <tr>
                               <th>Visitor / Device</th>
@@ -1497,495 +1757,1329 @@ export default function AdminPage() {
               </div>
             )}
 
-            {/* 3. PAYMENT GATEWAY SECTION */}
-            {currentSection === 'payment' && (
-              <div className="admin-card" style={{ maxWidth: '640px' }}>
-                <div className="admin-card-header">
-                  <div>
-                    <h3 style={{ fontSize: '1rem', fontWeight: 900 }}>Razorpay Gateway Settings</h3>
-                    <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>Configure API keys for UPI, Cards, NetBanking payment processing.</p>
-                  </div>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  
-                  {/* Mode Selector */}
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '14px', background: '#09090b', borderRadius: '12px', border: '1px solid #27272a' }}>
-                    <div>
-                      <span style={{ fontWeight: 800, fontSize: '0.85rem', display: 'block' }}>Operating Mode</span>
-                      <span style={{ fontSize: '0.72rem', color: '#71717a' }}>{settings.payment?.isLiveMode ? '● LIVE MODE ACTIVE' : '○ TEST SANDBOX MODE'}</span>
+            {/* 3. INVENTORY & STOCK TRACKING (IN & OUT) */}
+            {currentSection === 'inventory' && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                
+                {/* Top Control Header */}
+                <div className="admin-card" style={{ padding: '20px 24px' }}>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '16px' }}>
+                    
+                    {/* Title & Badge */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ background: '#10b98118', border: '1px solid #10b98140', padding: '10px', borderRadius: '12px', color: '#10b981', display: 'flex' }}>
+                        <Boxes style={{ width: '24px', height: '24px' }} />
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <h2 style={{ fontSize: '1.2rem', fontWeight: 900, color: '#ffffff', letterSpacing: '-0.02em', margin: 0 }}>
+                            Stock & Inventory Control
+                          </h2>
+                          <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '3px 8px', borderRadius: '20px', background: '#18181b', border: '1px solid #27272a', color: '#a1a1aa' }}>
+                            {inventorySummary.itemCount} Kit Packages
+                          </span>
+                        </div>
+                        <p style={{ fontSize: '0.78rem', color: '#a1a1aa', marginTop: '3px', marginBottom: 0 }}>
+                          Track product inflow (factory restocks) and outflow (customer order fulfillment).
+                        </p>
+                      </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => setSettings({
-                        ...settings,
-                        payment: { ...settings.payment, isLiveMode: !settings.payment?.isLiveMode }
-                      })}
-                      className={settings.payment?.isLiveMode ? 'admin-btn-primary' : 'admin-btn-secondary'}
-                      style={{ fontSize: '0.74rem' }}
-                    >
-                      {settings.payment?.isLiveMode ? 'Switch to Test Mode' : 'Switch to Live Mode'}
-                    </button>
-                  </div>
-
-                  <div className="admin-input-group">
-                    <label className="admin-label">Razorpay Key ID</label>
-                    <input
-                      type="text"
-                      value={settings.payment?.razorpayKeyId || ''}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        payment: { ...settings.payment, razorpayKeyId: e.target.value }
-                      })}
-                      placeholder="rzp_live_... or rzp_test_..."
-                      className="admin-input-control"
-                      style={{ fontFamily: 'monospace' }}
-                    />
-                  </div>
-
-                  <div className="admin-input-group">
-                    <label className="admin-label">Razorpay Key Secret</label>
-                    <div style={{ position: 'relative' }}>
-                      <input
-                        type={showSecret ? "text" : "password"}
-                        value={settings.payment?.razorpayKeySecret || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          payment: { ...settings.payment, razorpayKeySecret: e.target.value }
-                        })}
-                        placeholder="Paste Key Secret..."
-                        className="admin-input-control"
-                        style={{ fontFamily: 'monospace', paddingRight: '40px' }}
-                      />
+                    {/* Primary Action Buttons */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
                       <button
-                        type="button"
-                        onClick={() => setShowSecret(!showSecret)}
-                        style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#71717a', cursor: 'pointer' }}
+                        onClick={fetchInventory}
+                        className="admin-btn-secondary"
+                        title="Refresh Stock Data"
+                        style={{ padding: '9px 12px' }}
                       >
-                        {showSecret ? <EyeOff style={{ width: '16px', height: '16px' }} /> : <Eye style={{ width: '16px', height: '16px' }} />}
+                        <RefreshCw className={inventoryLoading ? 'animate-spin' : ''} style={{ width: '15px', height: '15px' }} />
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const firstId = inventoryItems[0]?.id || '';
+                          setStockActionForm({
+                            itemId: firstId,
+                            quantity: 25,
+                            reason: 'Factory Restock Delivery',
+                            referenceId: `PO-${Date.now().toString().slice(-4)}`,
+                            performedBy: 'Admin',
+                            notes: 'Incoming stock shipment received'
+                          });
+                          setShowStockInModal(true);
+                        }}
+                        className="admin-btn-primary"
+                        style={{ background: '#10b981', borderColor: '#10b981', color: '#000000', fontWeight: 900, padding: '9px 16px' }}
+                      >
+                        <ArrowDownCircle style={{ width: '16px', height: '16px' }} />
+                        <span>+ Receive Stock (IN)</span>
+                      </button>
+
+                      <button
+                        onClick={() => {
+                          const firstId = inventoryItems[0]?.id || '';
+                          setStockActionForm({
+                            itemId: firstId,
+                            quantity: 1,
+                            reason: 'Customer Order Dispatched',
+                            referenceId: `DISP-${Date.now().toString().slice(-4)}`,
+                            performedBy: 'Admin',
+                            notes: 'Courier package dispatched'
+                          });
+                          setShowStockOutModal(true);
+                        }}
+                        className="admin-btn-secondary"
+                        style={{ borderColor: '#f59e0b60', color: '#f59e0b', fontWeight: 800, padding: '9px 16px' }}
+                      >
+                        <ArrowUpCircle style={{ width: '16px', height: '16px' }} />
+                        <span>- Dispatch Stock (OUT)</span>
+                      </button>
+
+                      <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="admin-btn-secondary"
+                        style={{ padding: '9px 14px' }}
+                      >
+                        <Plus style={{ width: '15px', height: '15px' }} />
+                        <span>New Product</span>
+                      </button>
+
+                      <button
+                        onClick={handleExportInventoryCSV}
+                        className="admin-btn-secondary"
+                        title="Download CSV Ledger"
+                        style={{ padding: '9px 12px' }}
+                      >
+                        <Download style={{ width: '15px', height: '15px' }} />
                       </button>
                     </div>
+
                   </div>
 
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={settingsLoading}
-                    className="admin-btn-primary"
-                    style={{ width: '100%', padding: '14px', justifyContent: 'center', marginTop: '8px' }}
-                  >
-                    {settingsLoading ? 'Saving...' : 'Save Payment Configuration'}
-                  </button>
+                  {/* Section View Tabs */}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderTop: '1px solid #1f1f23', marginTop: '18px', paddingTop: '14px', flexWrap: 'wrap', gap: '12px' }}>
+                    <div style={{ display: 'flex', gap: '8px', background: '#09090b', padding: '4px', borderRadius: '10px', border: '1px solid #27272a' }}>
+                      <button
+                        onClick={() => setInventoryTab('products')}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: inventoryTab === 'products' ? '#ffffff' : 'transparent',
+                          color: inventoryTab === 'products' ? '#000000' : '#a1a1aa',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Package style={{ width: '14px', height: '14px' }} />
+                        <span>Products & Live Stock ({inventoryItems.length})</span>
+                      </button>
+
+                      <button
+                        onClick={() => setInventoryTab('ledger')}
+                        style={{
+                          padding: '7px 16px',
+                          borderRadius: '8px',
+                          border: 'none',
+                          fontSize: '0.78rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: inventoryTab === 'ledger' ? '#ffffff' : 'transparent',
+                          color: inventoryTab === 'ledger' ? '#000000' : '#a1a1aa',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        <Activity style={{ width: '14px', height: '14px' }} />
+                        <span>In / Out Activity Ledger ({inventoryLogs.length})</span>
+                      </button>
+                    </div>
+
+                    {inventoryTab === 'products' && (
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.74rem', color: '#71717a' }}>
+                        <span>Layout:</span>
+                        <div style={{ display: 'flex', background: '#09090b', borderRadius: '8px', border: '1px solid #27272a', padding: '2px' }}>
+                          <button
+                            onClick={() => setInventoryViewMode('table')}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '0.70rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              background: inventoryViewMode === 'table' ? '#27272a' : 'transparent',
+                              color: inventoryViewMode === 'table' ? '#ffffff' : '#71717a'
+                            }}
+                          >
+                            Table View
+                          </button>
+                          <button
+                            onClick={() => setInventoryViewMode('cards')}
+                            style={{
+                              padding: '4px 10px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '0.70rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              background: inventoryViewMode === 'cards' ? '#27272a' : 'transparent',
+                              color: inventoryViewMode === 'cards' ? '#ffffff' : '#71717a'
+                            }}
+                          >
+                            Card View
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* KPI Metrics Summary Strip */}
+                <div className="admin-stat-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(210px, 1fr))' }}>
+                  
+                  {/* On-Hand Inventory */}
+                  <div className="admin-stat-card" style={{ borderColor: '#27272a', background: 'linear-gradient(180deg, #18181b 0%, #0d0d0d 100%)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="admin-stat-label">Units In Stock</span>
+                      <PackageCheck style={{ width: '18px', height: '18px', color: '#38bdf8' }} />
+                    </div>
+                    <div className="admin-stat-val" style={{ color: '#ffffff' }}>
+                      {inventorySummary.totalCurrentStock}
+                      <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#a1a1aa', marginLeft: '6px' }}>units</span>
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: '#38bdf8', fontWeight: 700, marginTop: '5px' }}>
+                      ● Ready for customer delivery
+                    </div>
+                  </div>
+
+                  {/* Total Came IN */}
+                  <div className="admin-stat-card" style={{ borderColor: '#064e3b', background: 'linear-gradient(180deg, #022c22 0%, #0d0d0d 100%)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="admin-stat-label" style={{ color: '#86efac' }}>Products Came IN</span>
+                      <ArrowDownCircle style={{ width: '18px', height: '18px', color: '#10b981' }} />
+                    </div>
+                    <div className="admin-stat-val" style={{ color: '#10b981' }}>
+                      +{inventorySummary.totalProductsIn}
+                      <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#86efac', marginLeft: '6px' }}>received</span>
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: '#86efac', fontWeight: 700, marginTop: '5px' }}>
+                      ● Total factory & restock inflow
+                    </div>
+                  </div>
+
+                  {/* Total Went OUT */}
+                  <div className="admin-stat-card" style={{ borderColor: '#7c2d12', background: 'linear-gradient(180deg, #451a03 0%, #0d0d0d 100%)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="admin-stat-label" style={{ color: '#fdba74' }}>Products Went OUT</span>
+                      <ArrowUpCircle style={{ width: '18px', height: '18px', color: '#f97316' }} />
+                    </div>
+                    <div className="admin-stat-val" style={{ color: '#f97316' }}>
+                      -{inventorySummary.totalProductsOut}
+                      <span style={{ fontSize: '0.80rem', fontWeight: 600, color: '#fdba74', marginLeft: '6px' }}>dispatched</span>
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: '#fdba74', fontWeight: 700, marginTop: '5px' }}>
+                      ● Orders fulfilled & shipped
+                    </div>
+                  </div>
+
+                  {/* Stock Health */}
+                  <div className="admin-stat-card" style={{ borderColor: inventorySummary.lowStockCount > 0 ? '#b45309' : '#27272a' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="admin-stat-label">Inventory Health</span>
+                      <ShieldCheck style={{ width: '18px', height: '18px', color: inventorySummary.lowStockCount > 0 ? '#f59e0b' : '#10b981' }} />
+                    </div>
+                    <div className="admin-stat-val" style={{ color: inventorySummary.lowStockCount > 0 ? '#f59e0b' : '#10b981', fontSize: '1.45rem' }}>
+                      {inventorySummary.lowStockCount > 0 ? `${inventorySummary.lowStockCount} Low Item(s)` : 'Optimal'}
+                    </div>
+                    <div style={{ fontSize: '0.70rem', color: '#71717a', fontWeight: 700, marginTop: '5px' }}>
+                      {inventorySummary.lowStockCount > 0 ? 'Reorder needed to prevent stockouts' : 'All packages above safe reserve'}
+                    </div>
+                  </div>
 
                 </div>
+
+                {/* TAB 1: PRODUCTS & LIVE STOCK */}
+                {inventoryTab === 'products' && (
+                  <div className="admin-card" style={{ padding: '22px' }}>
+                    <div className="admin-card-header" style={{ marginBottom: '16px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 900 }}>Product Catalog & On-Hand Balance</h3>
+                        <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>
+                          Use quick action buttons on each item to record products arriving or dispatched.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => setShowAddItemModal(true)}
+                        className="admin-btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: '0.74rem' }}
+                      >
+                        <Plus style={{ width: '13px', height: '13px' }} />
+                        <span>Add Kit</span>
+                      </button>
+                    </div>
+
+                    {inventoryItems.length === 0 ? (
+                      <div style={{ textAlign: 'center', padding: '50px 0', color: '#71717a', fontSize: '0.85rem' }}>
+                        No inventory products found. Click &quot;Add Kit&quot; to configure your products.
+                      </div>
+                    ) : inventoryViewMode === 'table' ? (
+                      /* HIGH-DENSITY PROFESSIONAL TABLE VIEW */
+                      <div className="admin-table-container">
+                        <table className="admin-table-root">
+                          <thead>
+                            <tr>
+                              <th>Product Name & SKU</th>
+                              <th>Category</th>
+                              <th>Current Stock</th>
+                              <th>Status</th>
+                              <th>Came IN (Total)</th>
+                              <th>Went OUT (Total)</th>
+                              <th>Alert Threshold</th>
+                              <th style={{ textAlign: 'right' }}>Quick Actions</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {inventoryItems.map((item) => {
+                              const isLow = item.currentStock <= item.minThreshold;
+                              const isOut = item.currentStock === 0;
+
+                              return (
+                                <tr key={item.id}>
+                                  <td>
+                                    <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.85rem' }}>
+                                      {item.name}
+                                    </div>
+                                    <div style={{ fontSize: '0.70rem', color: '#71717a', fontFamily: 'monospace' }}>
+                                      {item.sku || item.id}
+                                    </div>
+                                  </td>
+
+                                  <td>
+                                    <span style={{ fontSize: '0.72rem', background: '#18181b', padding: '3px 8px', borderRadius: '6px', color: '#d4d4d8', border: '1px solid #27272a' }}>
+                                      {item.category}
+                                    </span>
+                                  </td>
+
+                                  <td>
+                                    <span style={{ fontSize: '1.05rem', fontWeight: 900, color: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#ffffff' }}>
+                                      {item.currentStock}
+                                    </span>
+                                    <span style={{ fontSize: '0.72rem', color: '#71717a', marginLeft: '4px' }}>units</span>
+                                  </td>
+
+                                  <td>
+                                    <span
+                                      style={{
+                                        fontSize: '0.70rem',
+                                        fontWeight: 800,
+                                        padding: '3px 8px',
+                                        borderRadius: '6px',
+                                        background: isOut ? '#7f1d1d' : isLow ? '#78350f' : '#064e3b',
+                                        color: isOut ? '#fca5a5' : isLow ? '#fde68a' : '#a7f3d0'
+                                      }}
+                                    >
+                                      {isOut ? 'Out of Stock' : isLow ? 'Low Reserve' : 'Healthy Stock'}
+                                    </span>
+                                  </td>
+
+                                  <td>
+                                    <span style={{ fontSize: '0.80rem', fontWeight: 800, color: '#10b981' }}>
+                                      +{item.totalIn || 0}
+                                    </span>
+                                  </td>
+
+                                  <td>
+                                    <span style={{ fontSize: '0.80rem', fontWeight: 800, color: '#f97316' }}>
+                                      -{item.totalOut || 0}
+                                    </span>
+                                  </td>
+
+                                  <td style={{ fontSize: '0.76rem', color: '#71717a' }}>
+                                    {item.minThreshold} units
+                                  </td>
+
+                                  <td style={{ textAlign: 'right' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                                      <button
+                                        onClick={() => {
+                                          setStockActionForm({
+                                            itemId: item.id,
+                                            quantity: 25,
+                                            reason: 'Supplier Restock Delivery',
+                                            referenceId: `PO-${Date.now().toString().slice(-4)}`,
+                                            performedBy: 'Admin',
+                                            notes: `Restock batch for ${item.name}`
+                                          });
+                                          setShowStockInModal(true);
+                                        }}
+                                        className="admin-btn-secondary"
+                                        style={{ padding: '6px 10px', fontSize: '0.72rem', borderColor: '#10b98140', color: '#34d399' }}
+                                        title="Record new stock coming in"
+                                      >
+                                        <ArrowDownCircle style={{ width: '13px', height: '13px' }} />
+                                        <span>+ In</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => {
+                                          setStockActionForm({
+                                            itemId: item.id,
+                                            quantity: 1,
+                                            reason: 'Customer Order Dispatched',
+                                            referenceId: `DISP-${Date.now().toString().slice(-4)}`,
+                                            performedBy: 'Admin',
+                                            notes: `Fulfillment dispatch for ${item.name}`
+                                          });
+                                          setShowStockOutModal(true);
+                                        }}
+                                        className="admin-btn-secondary"
+                                        style={{ padding: '6px 10px', fontSize: '0.72rem', borderColor: '#f59e0b40', color: '#fbbf24' }}
+                                        title="Record units dispatched"
+                                      >
+                                        <ArrowUpCircle style={{ width: '13px', height: '13px' }} />
+                                        <span>- Out</span>
+                                      </button>
+
+                                      <button
+                                        onClick={() => handleDeleteInventoryItem(item.id, item.name)}
+                                        className="admin-btn-secondary"
+                                        style={{ padding: '6px 8px', color: '#52525b' }}
+                                        title="Delete product"
+                                      >
+                                        <Trash2 style={{ width: '13px', height: '13px' }} />
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                          </tbody>
+                        </table>
+                      </div>
+                    ) : (
+                      /* CARDS GRID VIEW */
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
+                        {inventoryItems.map((item) => {
+                          const isLow = item.currentStock <= item.minThreshold;
+                          const isOut = item.currentStock === 0;
+                          const healthPct = Math.min(100, Math.round((item.currentStock / Math.max(item.minThreshold * 3, 50)) * 100));
+
+                          return (
+                            <div
+                              key={item.id}
+                              style={{
+                                background: '#121215',
+                                border: `1px solid ${isOut ? '#ef444450' : isLow ? '#f59e0b50' : '#27272a'}`,
+                                borderRadius: '14px',
+                                padding: '18px',
+                                display: 'flex',
+                                flexDirection: 'column',
+                                gap: '12px'
+                              }}
+                            >
+                              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                                <div>
+                                  <span style={{ fontSize: '0.66rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#a1a1aa', fontWeight: 800 }}>
+                                    {item.category} • {item.sku || item.id}
+                                  </span>
+                                  <h4 style={{ fontSize: '1rem', fontWeight: 900, color: '#ffffff', marginTop: '2px' }}>
+                                    {item.name}
+                                  </h4>
+                                </div>
+
+                                <span
+                                  style={{
+                                    fontSize: '0.68rem',
+                                    fontWeight: 800,
+                                    padding: '3px 8px',
+                                    borderRadius: '6px',
+                                    background: isOut ? '#7f1d1d' : isLow ? '#78350f' : '#064e3b',
+                                    color: isOut ? '#fca5a5' : isLow ? '#fde68a' : '#a7f3d0'
+                                  }}
+                                >
+                                  {isOut ? 'Out of Stock' : isLow ? 'Low Stock' : 'Healthy Stock'}
+                                </span>
+                              </div>
+
+                              <div>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                                  <span style={{ fontSize: '1.5rem', fontWeight: 900, color: '#ffffff' }}>
+                                    {item.currentStock}
+                                    <span style={{ fontSize: '0.78rem', color: '#a1a1aa', fontWeight: 600, marginLeft: '6px' }}>units left</span>
+                                  </span>
+                                  <span style={{ fontSize: '0.70rem', color: '#71717a' }}>
+                                    Min Safe: {item.minThreshold}
+                                  </span>
+                                </div>
+
+                                <div style={{ height: '6px', background: '#27272a', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div
+                                    style={{
+                                      height: '100%',
+                                      width: `${healthPct}%`,
+                                      background: isOut ? '#ef4444' : isLow ? '#f59e0b' : '#10b981',
+                                      borderRadius: '4px',
+                                      transition: 'width 0.4s ease'
+                                    }}
+                                  />
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', justifyContent: 'space-between', background: '#09090b', padding: '8px 12px', borderRadius: '8px', fontSize: '0.72rem' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#10b981', fontWeight: 700 }}>
+                                  <ArrowDownCircle style={{ width: '13px', height: '13px' }} />
+                                  <span>Came IN: +{item.totalIn || 0}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#f97316', fontWeight: 700 }}>
+                                  <ArrowUpCircle style={{ width: '13px', height: '13px' }} />
+                                  <span>Went OUT: -{item.totalOut || 0}</span>
+                                </div>
+                              </div>
+
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: 'auto', paddingTop: '4px' }}>
+                                <button
+                                  onClick={() => {
+                                    setStockActionForm({
+                                      itemId: item.id,
+                                      quantity: 25,
+                                      reason: 'Supplier Restock Delivery',
+                                      referenceId: `PO-${Date.now().toString().slice(-4)}`,
+                                      performedBy: 'Admin',
+                                      notes: `Restock for ${item.name}`
+                                    });
+                                    setShowStockInModal(true);
+                                  }}
+                                  className="admin-btn-secondary"
+                                  style={{ flex: 1, padding: '7px 10px', fontSize: '0.74rem', justifyContent: 'center', borderColor: '#10b98150', color: '#34d399' }}
+                                >
+                                  <ArrowDownCircle style={{ width: '13px', height: '13px' }} />
+                                  <span>+ Stock IN</span>
+                                </button>
+
+                                <button
+                                  onClick={() => {
+                                    setStockActionForm({
+                                      itemId: item.id,
+                                      quantity: 1,
+                                      reason: 'Customer Order Dispatched',
+                                      referenceId: `DISP-${Date.now().toString().slice(-4)}`,
+                                      performedBy: 'Admin',
+                                      notes: `Fulfillment for ${item.name}`
+                                    });
+                                    setShowStockOutModal(true);
+                                  }}
+                                  className="admin-btn-secondary"
+                                  style={{ flex: 1, padding: '7px 10px', fontSize: '0.74rem', justifyContent: 'center', borderColor: '#f59e0b50', color: '#fbbf24' }}
+                                >
+                                  <ArrowUpCircle style={{ width: '13px', height: '13px' }} />
+                                  <span>- Stock OUT</span>
+                                </button>
+
+                                <button
+                                  onClick={() => handleDeleteInventoryItem(item.id, item.name)}
+                                  className="admin-btn-secondary"
+                                  title="Delete item"
+                                  style={{ padding: '7px 8px', color: '#71717a' }}
+                                >
+                                  <Trash2 style={{ width: '13px', height: '13px' }} />
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* TAB 2: IN / OUT ACTIVITY LEDGER */}
+                {inventoryTab === 'ledger' && (
+                  <div className="admin-card" style={{ padding: '22px' }}>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '18px' }}>
+                      <div>
+                        <h3 style={{ fontSize: '1.05rem', fontWeight: 900 }}>Product Flow & Fulfillment Ledger</h3>
+                        <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>
+                          Transparent audit log of all incoming stock batches and outgoing customer shipments.
+                        </p>
+                      </div>
+
+                      {/* Filter Bar */}
+                      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '10px' }}>
+                        {/* Flow Segment Buttons */}
+                        <div style={{ display: 'flex', background: '#09090b', padding: '3px', borderRadius: '8px', border: '1px solid #27272a' }}>
+                          <button
+                            onClick={() => setStockLogFilter('ALL')}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: stockLogFilter === 'ALL' ? '#ffffff' : 'transparent',
+                              color: stockLogFilter === 'ALL' ? '#000000' : '#a1a1aa'
+                            }}
+                          >
+                            All Logs
+                          </button>
+                          <button
+                            onClick={() => setStockLogFilter('IN')}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: stockLogFilter === 'IN' ? '#10b981' : 'transparent',
+                              color: stockLogFilter === 'IN' ? '#000000' : '#a1a1aa'
+                            }}
+                          >
+                            📥 Came IN (Restocks)
+                          </button>
+                          <button
+                            onClick={() => setStockLogFilter('OUT')}
+                            style={{
+                              padding: '5px 12px',
+                              borderRadius: '6px',
+                              border: 'none',
+                              fontSize: '0.72rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: stockLogFilter === 'OUT' ? '#f97316' : 'transparent',
+                              color: stockLogFilter === 'OUT' ? '#ffffff' : '#a1a1aa'
+                            }}
+                          >
+                            📤 Went OUT (Shipments)
+                          </button>
+                        </div>
+
+                        {/* Product Filter */}
+                        <select
+                          value={stockLogItemFilter}
+                          onChange={(e) => setStockLogItemFilter(e.target.value)}
+                          className="admin-input-control"
+                          style={{ width: 'auto', padding: '6px 12px', fontSize: '0.74rem' }}
+                        >
+                          <option value="ALL">All Product Kits</option>
+                          {inventoryItems.map(it => (
+                            <option key={it.id} value={it.id}>{it.name}</option>
+                          ))}
+                        </select>
+
+                        {/* Search Bar */}
+                        <div style={{ position: 'relative' }}>
+                          <Search style={{ width: '13px', height: '13px', position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+                          <input
+                            type="text"
+                            value={stockLogSearch}
+                            onChange={(e) => setStockLogSearch(e.target.value)}
+                            placeholder="Search ref #, reason..."
+                            className="admin-input-control"
+                            style={{ width: '200px', padding: '6px 10px 6px 30px', fontSize: '0.74rem' }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Table */}
+                    {(() => {
+                      const filtered = inventoryLogs.filter((l) => {
+                        if (stockLogFilter !== 'ALL' && l.type !== stockLogFilter) return false;
+                        if (stockLogItemFilter !== 'ALL' && l.itemId !== stockLogItemFilter) return false;
+                        if (stockLogSearch.trim()) {
+                          const q = stockLogSearch.toLowerCase();
+                          const match =
+                            (l.itemName || '').toLowerCase().includes(q) ||
+                            (l.reason || '').toLowerCase().includes(q) ||
+                            (l.referenceId || '').toLowerCase().includes(q) ||
+                            (l.performedBy || '').toLowerCase().includes(q) ||
+                            (l.notes || '').toLowerCase().includes(q);
+                          if (!match) return false;
+                        }
+                        return true;
+                      });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div style={{ textAlign: 'center', padding: '50px 0', color: '#71717a', fontSize: '0.82rem' }}>
+                            No stock movement logs match your current search/filter.
+                          </div>
+                        );
+                      }
+
+                      return (
+                        <div className="admin-table-container">
+                          <table className="admin-table-root">
+                            <thead>
+                              <tr>
+                                <th>Timestamp</th>
+                                <th>Product Kit</th>
+                                <th>Direction</th>
+                                <th>Quantity Change</th>
+                                <th>Reason / Movement Event</th>
+                                <th>Reference (Order / PO)</th>
+                                <th>Logged By</th>
+                                <th>Notes</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {filtered.map((log) => {
+                                const isIn = log.type === 'IN';
+                                return (
+                                  <tr key={log.id}>
+                                    <td style={{ fontSize: '0.74rem', color: '#a1a1aa', whiteSpace: 'nowrap' }}>
+                                      {new Date(log.createdAt).toLocaleString('en-IN', {
+                                        day: '2-digit',
+                                        month: 'short',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit'
+                                      })}
+                                    </td>
+                                    <td>
+                                      <div style={{ fontWeight: 800, color: '#ffffff', fontSize: '0.82rem' }}>
+                                        {log.itemName}
+                                      </div>
+                                    </td>
+                                    <td>
+                                      <span
+                                        style={{
+                                          display: 'inline-flex',
+                                          alignItems: 'center',
+                                          gap: '4px',
+                                          padding: '3px 8px',
+                                          borderRadius: '6px',
+                                          fontSize: '0.70rem',
+                                          fontWeight: 800,
+                                          background: isIn ? '#064e3b' : '#7c2d12',
+                                          color: isIn ? '#86efac' : '#fdba74'
+                                        }}
+                                      >
+                                        {isIn ? <ArrowDownCircle style={{ width: '12px', height: '12px' }} /> : <ArrowUpCircle style={{ width: '12px', height: '12px' }} />}
+                                        <span>{isIn ? 'Stock Arrived (IN)' : 'Dispatched (OUT)'}</span>
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span
+                                        style={{
+                                          fontSize: '0.90rem',
+                                          fontWeight: 900,
+                                          color: isIn ? '#10b981' : '#f97316'
+                                        }}
+                                      >
+                                        {isIn ? `+${log.quantity}` : `-${log.quantity}`}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      <span style={{ fontSize: '0.78rem', color: '#e4e4e7', fontWeight: 600 }}>
+                                        {log.reason}
+                                      </span>
+                                    </td>
+                                    <td>
+                                      {log.referenceId ? (
+                                        <span style={{ fontFamily: 'monospace', fontSize: '0.72rem', background: '#1c1c20', padding: '2px 8px', borderRadius: '4px', color: '#38bdf8', border: '1px solid #27272a' }}>
+                                          {log.referenceId}
+                                        </span>
+                                      ) : (
+                                        <span style={{ color: '#52525b', fontSize: '0.70rem' }}>—</span>
+                                      )}
+                                    </td>
+                                    <td style={{ fontSize: '0.74rem', color: '#a1a1aa' }}>
+                                      {log.performedBy || 'Admin'}
+                                    </td>
+                                    <td style={{ fontSize: '0.74rem', color: '#71717a', maxWidth: '220px' }}>
+                                      {log.notes || '—'}
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                )}
+
+                {/* MODAL 1: SIMPLE PROFESSIONAL STOCK IN (ARRIVED) */}
+                <AnimatePresence>
+                  {showStockInModal && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="admin-modal-overlay"
+                      onClick={() => setShowStockInModal(false)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, y: 15 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, y: 15 }}
+                        className="admin-modal-box"
+                        style={{ maxWidth: '480px', padding: '24px' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="admin-modal-header" style={{ paddingBottom: '14px', borderBottom: '1px solid #27272a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ background: '#10b98120', padding: '8px', borderRadius: '10px', color: '#10b981', display: 'flex' }}>
+                              <ArrowDownCircle style={{ width: '22px', height: '22px' }} />
+                            </div>
+                            <div>
+                              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, margin: 0, color: '#ffffff' }}>Record Stock Arrived (IN)</h3>
+                              <p style={{ fontSize: '0.72rem', color: '#71717a', margin: '2px 0 0 0' }}>Add new inventory units received from factory or suppliers.</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setShowStockInModal(false)} className="admin-modal-close-btn">
+                            <X style={{ width: '18px', height: '18px' }} />
+                          </button>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleRecordStockAction('IN');
+                          }}
+                          style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}
+                        >
+                          <div>
+                            <label className="admin-label">1. Select Product Kit *</label>
+                            <select
+                              value={stockActionForm.itemId}
+                              onChange={(e) => setStockActionForm({ ...stockActionForm, itemId: e.target.value })}
+                              className="admin-input-control"
+                              required
+                              style={{ marginTop: '4px' }}
+                            >
+                              <option value="">-- Choose Product --</option>
+                              {inventoryItems.map((it) => (
+                                <option key={it.id} value={it.id}>
+                                  {it.name} (Current: {it.currentStock} units)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="admin-label">2. Units Received *</label>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                              <input
+                                type="number"
+                                min="1"
+                                value={stockActionForm.quantity}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                                className="admin-input-control"
+                                style={{ flex: 1 }}
+                                required
+                              />
+                            </div>
+                            {/* Preset Quick Chips */}
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                              {[10, 25, 50, 100].map(qty => (
+                                <button
+                                  type="button"
+                                  key={qty}
+                                  onClick={() => setStockActionForm({ ...stockActionForm, quantity: qty })}
+                                  style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #27272a',
+                                    background: stockActionForm.quantity === qty ? '#10b981' : '#18181b',
+                                    color: stockActionForm.quantity === qty ? '#000000' : '#a1a1aa',
+                                    fontSize: '0.70rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  +{qty}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label className="admin-label">Batch / PO Reference</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. PO-9802 or BATCH-OCT"
+                                value={stockActionForm.referenceId}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, referenceId: e.target.value })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="admin-label">Source / Supplier</label>
+                              <input
+                                type="text"
+                                value={stockActionForm.reason}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, reason: e.target.value })}
+                                placeholder="e.g. Factory Delivery"
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="admin-label">Notes (Optional)</label>
+                            <input
+                              type="text"
+                              placeholder="Invoice number or quality check notes"
+                              value={stockActionForm.notes}
+                              onChange={(e) => setStockActionForm({ ...stockActionForm, notes: e.target.value })}
+                              className="admin-input-control"
+                              style={{ marginTop: '4px' }}
+                            />
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #1f1f23' }}>
+                            <button type="button" onClick={() => setShowStockInModal(false)} className="admin-btn-secondary">
+                              Cancel
+                            </button>
+                            <button type="submit" className="admin-btn-primary" style={{ background: '#10b981', borderColor: '#10b981', color: '#000000', fontWeight: 900 }}>
+                              Confirm & Add to Stock
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* MODAL 2: SIMPLE PROFESSIONAL STOCK OUT (DISPATCHED) */}
+                <AnimatePresence>
+                  {showStockOutModal && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="admin-modal-overlay"
+                      onClick={() => setShowStockOutModal(false)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, y: 15 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, y: 15 }}
+                        className="admin-modal-box"
+                        style={{ maxWidth: '480px', padding: '24px' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="admin-modal-header" style={{ paddingBottom: '14px', borderBottom: '1px solid #27272a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ background: '#f59e0b20', padding: '8px', borderRadius: '10px', color: '#f59e0b', display: 'flex' }}>
+                              <ArrowUpCircle style={{ width: '22px', height: '22px' }} />
+                            </div>
+                            <div>
+                              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, margin: 0, color: '#ffffff' }}>Record Stock Out (Dispatched)</h3>
+                              <p style={{ fontSize: '0.72rem', color: '#71717a', margin: '2px 0 0 0' }}>Deduct units for customer shipments, samples, or replacements.</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setShowStockOutModal(false)} className="admin-modal-close-btn">
+                            <X style={{ width: '18px', height: '18px' }} />
+                          </button>
+                        </div>
+
+                        <form
+                          onSubmit={(e) => {
+                            e.preventDefault();
+                            handleRecordStockAction('OUT');
+                          }}
+                          style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}
+                        >
+                          <div>
+                            <label className="admin-label">1. Select Product Kit *</label>
+                            <select
+                              value={stockActionForm.itemId}
+                              onChange={(e) => setStockActionForm({ ...stockActionForm, itemId: e.target.value })}
+                              className="admin-input-control"
+                              required
+                              style={{ marginTop: '4px' }}
+                            >
+                              <option value="">-- Choose Product --</option>
+                              {inventoryItems.map((it) => (
+                                <option key={it.id} value={it.id}>
+                                  {it.name} (Current: {it.currentStock} units)
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div>
+                            <label className="admin-label">2. Units Dispatched *</label>
+                            <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                              <input
+                                type="number"
+                                min="1"
+                                value={stockActionForm.quantity}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, quantity: Math.max(1, parseInt(e.target.value) || 1) })}
+                                className="admin-input-control"
+                                style={{ flex: 1 }}
+                                required
+                              />
+                            </div>
+                            {/* Preset Quick Chips */}
+                            <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                              {[1, 2, 5, 10].map(qty => (
+                                <button
+                                  type="button"
+                                  key={qty}
+                                  onClick={() => setStockActionForm({ ...stockActionForm, quantity: qty })}
+                                  style={{
+                                    padding: '4px 10px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #27272a',
+                                    background: stockActionForm.quantity === qty ? '#f97316' : '#18181b',
+                                    color: stockActionForm.quantity === qty ? '#ffffff' : '#a1a1aa',
+                                    fontSize: '0.70rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {qty} unit{qty > 1 ? 's' : ''}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="admin-label">3. Reason / Purpose</label>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '4px', marginBottom: '8px' }}>
+                              {['Customer Order Dispatched', 'Sample / Influencer Pack', 'Damaged / Defect', 'Inventory Correction'].map((r) => (
+                                <button
+                                  type="button"
+                                  key={r}
+                                  onClick={() => setStockActionForm({ ...stockActionForm, reason: r })}
+                                  style={{
+                                    padding: '4px 8px',
+                                    borderRadius: '6px',
+                                    border: '1px solid #27272a',
+                                    background: stockActionForm.reason === r ? '#27272a' : '#121215',
+                                    color: stockActionForm.reason === r ? '#ffffff' : '#71717a',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  {r}
+                                </button>
+                              ))}
+                            </div>
+                            <input
+                              type="text"
+                              value={stockActionForm.reason}
+                              onChange={(e) => setStockActionForm({ ...stockActionForm, reason: e.target.value })}
+                              className="admin-input-control"
+                              required
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label className="admin-label">Order # / Tracking AWB</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. ORD-1002"
+                                value={stockActionForm.referenceId}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, referenceId: e.target.value })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="admin-label">Courier / Notes</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. Delhivery / BlueDart"
+                                value={stockActionForm.notes}
+                                onChange={(e) => setStockActionForm({ ...stockActionForm, notes: e.target.value })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #1f1f23' }}>
+                            <button type="button" onClick={() => setShowStockOutModal(false)} className="admin-btn-secondary">
+                              Cancel
+                            </button>
+                            <button type="submit" className="admin-btn-primary" style={{ background: '#f59e0b', borderColor: '#f59e0b', color: '#000000', fontWeight: 900 }}>
+                              Confirm Stock Deduction
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* MODAL 3: ADD NEW PRODUCT ITEM */}
+                <AnimatePresence>
+                  {showAddItemModal && (
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="admin-modal-overlay"
+                      onClick={() => setShowAddItemModal(false)}
+                    >
+                      <motion.div
+                        initial={{ scale: 0.95, y: 15 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.95, y: 15 }}
+                        className="admin-modal-box"
+                        style={{ maxWidth: '480px', padding: '24px' }}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div className="admin-modal-header" style={{ paddingBottom: '14px', borderBottom: '1px solid #27272a' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <div style={{ background: '#3b82f620', padding: '8px', borderRadius: '10px', color: '#60a5fa', display: 'flex' }}>
+                              <Plus style={{ width: '22px', height: '22px' }} />
+                            </div>
+                            <div>
+                              <h3 style={{ fontSize: '1.05rem', fontWeight: 900, margin: 0, color: '#ffffff' }}>Add Product Package</h3>
+                              <p style={{ fontSize: '0.72rem', color: '#71717a', margin: '2px 0 0 0' }}>Register a new kit to track incoming batches and stock.</p>
+                            </div>
+                          </div>
+                          <button onClick={() => setShowAddItemModal(false)} className="admin-modal-close-btn">
+                            <X style={{ width: '18px', height: '18px' }} />
+                          </button>
+                        </div>
+
+                        <form onSubmit={handleSaveNewItem} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '16px' }}>
+                          <div>
+                            <label className="admin-label">Product Kit Name *</label>
+                            <input
+                              type="text"
+                              placeholder="e.g. Smart Money Financial Kit Deluxe"
+                              value={newItemForm.name}
+                              onChange={(e) => setNewItemForm({ ...newItemForm, name: e.target.value })}
+                              className="admin-input-control"
+                              style={{ marginTop: '4px' }}
+                              required
+                            />
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label className="admin-label">SKU / Code</label>
+                              <input
+                                type="text"
+                                placeholder="e.g. KGL-DLX-04"
+                                value={newItemForm.sku}
+                                onChange={(e) => setNewItemForm({ ...newItemForm, sku: e.target.value })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="admin-label">Category</label>
+                              <input
+                                type="text"
+                                placeholder="Smart Money Kit"
+                                value={newItemForm.category}
+                                onChange={(e) => setNewItemForm({ ...newItemForm, category: e.target.value })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
+                            <div>
+                              <label className="admin-label">Opening Stock</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={newItemForm.currentStock}
+                                onChange={(e) => setNewItemForm({ ...newItemForm, currentStock: parseInt(e.target.value) || 0 })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="admin-label">Low Stock Alert</label>
+                              <input
+                                type="number"
+                                min="1"
+                                value={newItemForm.minThreshold}
+                                onChange={(e) => setNewItemForm({ ...newItemForm, minThreshold: parseInt(e.target.value) || 10 })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+
+                            <div>
+                              <label className="admin-label">Unit Cost (₹)</label>
+                              <input
+                                type="number"
+                                min="0"
+                                value={newItemForm.unitCost}
+                                onChange={(e) => setNewItemForm({ ...newItemForm, unitCost: parseFloat(e.target.value) || 0 })}
+                                className="admin-input-control"
+                                style={{ marginTop: '4px' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', marginTop: '8px', paddingTop: '12px', borderTop: '1px solid #1f1f23' }}>
+                            <button type="button" onClick={() => setShowAddItemModal(false)} className="admin-btn-secondary">
+                              Cancel
+                            </button>
+                            <button type="submit" className="admin-btn-primary">
+                              Save & Track
+                            </button>
+                          </div>
+                        </form>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
               </div>
             )}
 
-            {/* 4. WHATSAPP & SUPPORT SECTION */}
-            {currentSection === 'whatsapp' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                
-                {/* 1. AUTOMATED WHATSAPP ORDER NOTIFICATION BOT */}
-                <div className="admin-card">
-                  <div className="admin-card-header">
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <h3 style={{ fontSize: '1rem', fontWeight: 900 }}>Automated WhatsApp Order Confirmation Bot</h3>
-                        <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '6px', background: settings.whatsapp?.autoNotificationEnabled !== false ? '#052e16' : '#27272a', color: settings.whatsapp?.autoNotificationEnabled !== false ? '#4ade80' : '#a1a1aa', fontWeight: 800, border: '1px solid #15803d' }}>
-                          {settings.whatsapp?.autoNotificationEnabled !== false ? '● Bot Active' : '○ Disabled'}
-                        </span>
-                      </div>
-                      <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>
-                        Automatically dispatch a personalized congratulations & order confirmation message to the buyer's WhatsApp number immediately when online payment is completed.
-                      </p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                    
-                    {/* Bot Master Toggle */}
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a' }}>
-                      <div>
-                        <div style={{ fontWeight: 800, fontSize: '0.84rem', color: '#ffffff' }}>Auto-Send WhatsApp upon Payment</div>
-                        <div style={{ fontSize: '0.70rem', color: '#71717a' }}>Dispatches message immediately when Razorpay verifies payment</div>
-                      </div>
-                      <label style={{ position: 'relative', display: 'inline-block', width: '44px', height: '24px', cursor: 'pointer' }}>
-                        <input
-                          type="checkbox"
-                          checked={settings.whatsapp?.autoNotificationEnabled !== false}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            whatsapp: { ...settings.whatsapp, autoNotificationEnabled: e.target.checked }
-                          })}
-                          style={{ opacity: 0, width: 0, height: 0 }}
-                        />
-                        <span style={{
-                          position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                          backgroundColor: settings.whatsapp?.autoNotificationEnabled !== false ? '#22c55e' : '#27272a',
-                          borderRadius: '24px', transition: '0.2s',
-                        }}>
-                          <span style={{
-                            position: 'absolute', content: '""', height: '18px', width: '18px', left: '3px', bottom: '3px',
-                            backgroundColor: '#ffffff', borderRadius: '50%', transition: '0.2s',
-                            transform: settings.whatsapp?.autoNotificationEnabled !== false ? 'translateX(20px)' : 'translateX(0)'
-                          }} />
-                        </span>
-                      </label>
-                    </div>
-
-                    {/* Provider Selector */}
-                    <div>
-                      <label className="admin-label">WhatsApp Gateway Provider</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '8px', marginTop: '6px' }}>
-                        {[
-                          { id: 'meta', title: 'Meta Cloud API (Official)', subtitle: 'Free 1,000 conversations/mo' },
-                          { id: 'twilio', title: 'Twilio WhatsApp API', subtitle: 'Global carrier gateway' },
-                          { id: 'custom_webhook', title: 'Custom Webhook / Aisensy', subtitle: 'Wati, Interakt, Fast2SMS' },
-                        ].map((prov) => (
-                          <button
-                            key={prov.id}
-                            type="button"
-                            onClick={() => setSettings({
-                              ...settings,
-                              whatsapp: { ...settings.whatsapp, provider: prov.id }
-                            })}
-                            style={{
-                              padding: '10px 12px',
-                              borderRadius: '10px',
-                              textAlign: 'left',
-                              cursor: 'pointer',
-                              border: '1px solid',
-                              background: (settings.whatsapp?.provider || 'meta') === prov.id ? '#ffffff' : '#09090b',
-                              color: (settings.whatsapp?.provider || 'meta') === prov.id ? '#000000' : '#ffffff',
-                              borderColor: (settings.whatsapp?.provider || 'meta') === prov.id ? '#ffffff' : '#27272a'
-                            }}
-                          >
-                            <div style={{ fontWeight: 800, fontSize: '0.80rem' }}>{prov.title}</div>
-                            <div style={{ fontSize: '0.68rem', color: (settings.whatsapp?.provider || 'meta') === prov.id ? '#3f3f46' : '#71717a' }}>{prov.subtitle}</div>
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Meta Cloud API Fields */}
-                    {(settings.whatsapp?.provider || 'meta') === 'meta' && (
-                      <div style={{ padding: '14px', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800 }}>Meta WhatsApp Business Cloud API Credentials</div>
-                        
-                        <div className="admin-input-group">
-                          <label className="admin-label">Phone Number ID</label>
-                          <input
-                            type="text"
-                            value={settings.whatsapp?.meta?.phoneNumberId || ''}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                meta: { ...(settings.whatsapp?.meta || {}), phoneNumberId: e.target.value }
-                              }
-                            })}
-                            placeholder="e.g. 104829104819201"
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-
-                        <div className="admin-input-group">
-                          <label className="admin-label">Permanent System Access Token</label>
-                          <div style={{ position: 'relative' }}>
-                            <input
-                              type={showWaToken ? "text" : "password"}
-                              value={settings.whatsapp?.meta?.accessToken || ''}
-                              onChange={(e) => setSettings({
-                                ...settings,
-                                whatsapp: {
-                                  ...settings.whatsapp,
-                                  meta: { ...(settings.whatsapp?.meta || {}), accessToken: e.target.value }
-                                }
-                              })}
-                              placeholder="EAAG..."
-                              className="admin-input-control"
-                              style={{ fontFamily: 'monospace', paddingRight: '40px' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowWaToken(!showWaToken)}
-                              style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#71717a', cursor: 'pointer' }}
-                            >
-                              {showWaToken ? <EyeOff style={{ width: '16px', height: '16px' }} /> : <Eye style={{ width: '16px', height: '16px' }} />}
-                            </button>
-                          </div>
-                        </div>
-
-                        <p style={{ fontSize: '0.70rem', color: '#71717a', lineHeight: 1.4 }}>
-                          💡 <em>Tip: Get these from your Meta Developer Portal (developers.facebook.com → WhatsApp → API Setup). The first 1,000 customer service conversations every month are 100% free!</em>
-                        </p>
-                      </div>
-                    )}
-
-                    {/* Twilio Fields */}
-                    {settings.whatsapp?.provider === 'twilio' && (
-                      <div style={{ padding: '14px', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800 }}>Twilio WhatsApp Gateway</div>
-                        
-                        <div className="admin-input-group">
-                          <label className="admin-label">Account SID</label>
-                          <input
-                            type="text"
-                            value={settings.whatsapp?.twilio?.accountSid || ''}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                twilio: { ...(settings.whatsapp?.twilio || {}), accountSid: e.target.value }
-                              }
-                            })}
-                            placeholder="AC..."
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-
-                        <div className="admin-input-group">
-                          <label className="admin-label">Auth Token</label>
-                          <input
-                            type="password"
-                            value={settings.whatsapp?.twilio?.authToken || ''}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                twilio: { ...(settings.whatsapp?.twilio || {}), authToken: e.target.value }
-                              }
-                            })}
-                            placeholder="Auth Token..."
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-
-                        <div className="admin-input-group">
-                          <label className="admin-label">From WhatsApp Number</label>
-                          <input
-                            type="text"
-                            value={settings.whatsapp?.twilio?.fromNumber || 'whatsapp:+14155238886'}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                twilio: { ...(settings.whatsapp?.twilio || {}), fromNumber: e.target.value }
-                              }
-                            })}
-                            placeholder="whatsapp:+14155238886"
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Custom Webhook Fields */}
-                    {settings.whatsapp?.provider === 'custom_webhook' && (
-                      <div style={{ padding: '14px', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        <div style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 800 }}>Custom Webhook / Aisensy / Wati Integration</div>
-                        
-                        <div className="admin-input-group">
-                          <label className="admin-label">Webhook URL</label>
-                          <input
-                            type="text"
-                            value={settings.whatsapp?.customWebhook?.url || ''}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                customWebhook: { ...(settings.whatsapp?.customWebhook || {}), url: e.target.value }
-                              }
-                            })}
-                            placeholder="https://backend.aisensy.com/campaign/t1/api/v2..."
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-
-                        <div className="admin-input-group">
-                          <label className="admin-label">API Bearer Key (Optional)</label>
-                          <input
-                            type="password"
-                            value={settings.whatsapp?.customWebhook?.apiKey || ''}
-                            onChange={(e) => setSettings({
-                              ...settings,
-                              whatsapp: {
-                                ...settings.whatsapp,
-                                customWebhook: { ...(settings.whatsapp?.customWebhook || {}), apiKey: e.target.value }
-                              }
-                            })}
-                            placeholder="Bearer token..."
-                            className="admin-input-control"
-                            style={{ fontFamily: 'monospace' }}
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Customizable Congratulations Message Template */}
-                    <div className="admin-input-group">
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-                        <label className="admin-label" style={{ margin: 0 }}>Congratulations Message Template</label>
-                        <span style={{ fontSize: '0.70rem', color: '#71717a' }}>Supports dynamic placeholders</span>
-                      </div>
-                      
-                      {/* Dynamic Variable Chips */}
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                        {[
-                          { tag: '{customer_name}', label: 'Buyer Name' },
-                          { tag: '{order_id}', label: 'Order ID' },
-                          { tag: '{package_name}', label: 'Package' },
-                          { tag: '{amount}', label: 'Amount Paid' },
-                          { tag: '{support_number}', label: 'Support Phone' },
-                        ].map((v) => (
-                          <button
-                            key={v.tag}
-                            type="button"
-                            onClick={() => {
-                              const current = settings.whatsapp?.messageTemplate || '';
-                              setSettings({
-                                ...settings,
-                                whatsapp: { ...settings.whatsapp, messageTemplate: `${current} ${v.tag}` }
-                              });
-                            }}
-                            style={{
-                              padding: '2px 8px',
-                              borderRadius: '6px',
-                              fontSize: '0.68rem',
-                              fontFamily: 'monospace',
-                              background: '#18181b',
-                              color: '#38bdf8',
-                              border: '1px solid #27272a',
-                              cursor: 'pointer'
-                            }}
-                          >
-                            +{v.tag}
-                          </button>
-                        ))}
-                      </div>
-
-                      <textarea
-                        rows={7}
-                        value={settings.whatsapp?.messageTemplate || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          whatsapp: { ...settings.whatsapp, messageTemplate: e.target.value }
-                        })}
-                        className="admin-input-control"
-                        style={{ fontFamily: 'monospace', fontSize: '0.76rem', lineHeight: 1.4, resize: 'vertical' }}
-                      />
-                    </div>
-
-                    {/* Message Preview in WhatsApp Chat Bubble */}
-                    <div>
-                      <span className="admin-label">Live WhatsApp Chat Bubble Preview</span>
-                      <div style={{ background: '#0b141a', padding: '16px', borderRadius: '12px', border: '1px solid #1f2c34', marginTop: '6px' }}>
-                        <div style={{ maxWidth: '380px', background: '#005c4b', color: '#e9edef', padding: '12px 14px', borderRadius: '10px 10px 0px 10px', fontSize: '0.76rem', whiteSpace: 'pre-line', lineHeight: 1.4, boxShadow: '0 2px 4px rgba(0,0,0,0.3)', marginLeft: 'auto' }}>
-                          {(settings.whatsapp?.messageTemplate || '')
-                            .replace(/{customer_name}/g, 'Rahul Sharma')
-                            .replace(/{order_id}/g, 'ORD-1082')
-                            .replace(/{package_name}/g, 'Starter Saver Kit')
-                            .replace(/{amount}/g, '1199')
-                            .replace(/{support_number}/g, settings.whatsapp?.supportNumber || '919876543210')}
-                          <div style={{ textAlign: 'right', fontSize: '0.62rem', color: '#8696a0', marginTop: '6px' }}>
-                            Just now • ✓✓
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Test WhatsApp Message Widget */}
-                    <div style={{ padding: '14px', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a', display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                      <span className="admin-label" style={{ margin: 0 }}>🧪 Test WhatsApp Bot Dispatch</span>
-                      <p style={{ fontSize: '0.70rem', color: '#71717a' }}>Send a live test order confirmation message to your own phone number:</p>
-                      
-                      <div style={{ display: 'flex', gap: '8px' }}>
-                        <input
-                          type="text"
-                          value={testPhone}
-                          onChange={(e) => setTestPhone(e.target.value)}
-                          placeholder="e.g. 919876543210"
-                          className="admin-input-control"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                        <button
-                          type="button"
-                          onClick={handleSendTestWhatsApp}
-                          disabled={testSending}
-                          className="admin-btn-primary"
-                          style={{ padding: '8px 16px', flexShrink: 0 }}
-                        >
-                          {testSending ? 'Sending...' : 'Send Test WhatsApp'}
-                        </button>
-                      </div>
-
-                      {testResult && (
-                        <div style={{ fontSize: '0.72rem', fontWeight: 800, padding: '8px 10px', borderRadius: '8px', background: testResult.startsWith('✓') ? '#052e16' : '#27272a', color: testResult.startsWith('✓') ? '#4ade80' : '#f87171', border: '1px solid #15803d' }}>
-                          {testResult}
-                        </div>
-                      )}
-                    </div>
-
-                  </div>
+            {/* 4. DATABASE RECORDS */}
+            {currentSection === 'database' && (
+              <div className="admin-card" style={{ padding: '24px' }}>
+                <div className="admin-card-header" style={{ marginBottom: '24px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 900 }}>Database & Raw Data Inspector</h3>
+                  <p style={{ fontSize: '0.8rem', color: '#71717a' }}>View all internal system records and raw order data directly in a table format.</p>
                 </div>
 
-                {/* 2. CUSTOMER SUPPORT & CHAT INQUIRY SETTINGS */}
-                <div className="admin-card">
-                  <div className="admin-card-header">
-                    <div>
-                      <h3 style={{ fontSize: '1rem', fontWeight: 900 }}>Storefront WhatsApp Customer Support Button</h3>
-                      <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>Configure the floating customer WhatsApp button and initial inquiry greeting.</p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {!isDbUnlocked ? (
+                  <div style={{ background: '#09090b', padding: '30px', borderRadius: '12px', border: '1px solid #27272a', maxWidth: '400px', margin: '0 auto', textAlign: 'center' }}>
+                    <ShieldCheck style={{ width: '48px', height: '48px', color: '#f59e0b', margin: '0 auto 16px' }} />
+                    <h4 style={{ fontSize: '1rem', fontWeight: 800, marginBottom: '8px' }}>Security Check Required</h4>
+                    <p style={{ fontSize: '0.74rem', color: '#71717a', marginBottom: '20px' }}>Enter the secondary database Master PIN to view raw backend records.</p>
                     
-                    <div className="admin-input-group">
-                      <label className="admin-label">Support WhatsApp Number (with Country Code)</label>
-                      <input
-                        type="text"
-                        value={settings.whatsapp?.supportNumber || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          whatsapp: { ...settings.whatsapp, supportNumber: e.target.value }
-                        })}
-                        placeholder="e.g. 919876543210"
-                        className="admin-input-control"
-                        style={{ fontFamily: 'monospace' }}
-                      />
-                    </div>
+                    <input
+                      type="password"
+                      value={dbPinInput}
+                      onChange={(e) => {
+                        setDbPinInput(e.target.value);
+                        setDbPinError('');
+                      }}
+                      placeholder="Enter Database PIN..."
+                      style={{
+                        width: '100%', padding: '12px', background: '#000000', border: '1px solid #27272a',
+                        borderRadius: '8px', color: '#ffffff', fontSize: '1rem', textAlign: 'center',
+                        letterSpacing: '4px', fontFamily: 'monospace', marginBottom: '16px'
+                      }}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          if (dbPinInput === '8888') {
+                            setIsDbUnlocked(true);
+                            setDbPinError('');
+                          } else {
+                            setDbPinError('Incorrect Database PIN. Access denied.');
+                          }
+                        }
+                      }}
+                    />
 
-                    <div className="admin-input-group">
-                      <label className="admin-label">Default Pre-filled Inquiry Message</label>
-                      <textarea
-                        rows={3}
-                        value={settings.whatsapp?.defaultMessage || ''}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          whatsapp: { ...settings.whatsapp, defaultMessage: e.target.value }
-                        })}
-                        className="admin-input-control"
-                        style={{ resize: 'vertical' }}
-                      />
-                    </div>
+                    {dbPinError && <div style={{ color: '#ef4444', fontSize: '0.74rem', fontWeight: 700, marginBottom: '16px' }}>{dbPinError}</div>}
 
                     <button
-                      onClick={handleSaveSettings}
-                      disabled={settingsLoading}
+                      onClick={() => {
+                        if (dbPinInput === '8888') {
+                          setIsDbUnlocked(true);
+                          setDbPinError('');
+                        } else {
+                          setDbPinError('Incorrect Database PIN. Access denied.');
+                        }
+                      }}
                       className="admin-btn-primary"
-                      style={{ width: '100%', padding: '14px', justifyContent: 'center' }}
+                      style={{ width: '100%', justifyContent: 'center' }}
                     >
-                      {settingsLoading ? 'Saving...' : 'Save WhatsApp & Bot Settings'}
+                      <Lock style={{ width: '14px', height: '14px' }} />
+                      <span>Unlock Database</span>
                     </button>
-
+                    <p style={{ fontSize: '0.65rem', color: '#71717a', marginTop: '12px' }}>Default PIN is 8888</p>
                   </div>
-                </div>
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: '#10b981' }}>● Connection Established - Live SQLite Records</h4>
+                      <button onClick={() => setIsDbUnlocked(false)} className="admin-btn-secondary" style={{ fontSize: '0.7rem', padding: '4px 8px' }}>
+                        <Lock style={{ width: '12px', height: '12px' }} /> Lock Access
+                      </button>
+                    </div>
 
+                    <div style={{ overflowX: 'auto', background: '#09090b', borderRadius: '10px', border: '1px solid #27272a' }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.74rem', textAlign: 'left' }}>
+                        <thead>
+                          <tr style={{ background: '#18181b', borderBottom: '1px solid #27272a' }}>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>DB ID</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Name</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Email</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Phone</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Flat/House No</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Address</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Landmark</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>City</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>District</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>State</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Pincode</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Package</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Amount</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Pay Method</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Pay ID</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Status</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Affiliate Ref</th>
+                            <th style={{ padding: '12px', fontWeight: 800, color: '#a1a1aa', whiteSpace: 'nowrap' }}>Created At</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {orders.map((ord, idx) => (
+                            <tr key={idx} style={{ borderBottom: '1px solid #27272a' }}>
+                              <td style={{ padding: '12px', fontFamily: 'monospace', color: '#71717a', whiteSpace: 'nowrap' }}>{ord.id}</td>
+                              <td style={{ padding: '12px', color: '#ffffff', whiteSpace: 'nowrap' }}>{ord.customerName}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.email || '-'}</td>
+                              <td style={{ padding: '12px', fontFamily: 'monospace', whiteSpace: 'nowrap' }}>{ord.phone}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.flatNo || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.address || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.landmark || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.city || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.district || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.state || '-'}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.pincode || '-'}</td>
+                              <td style={{ padding: '12px', color: '#e4e4e7', whiteSpace: 'nowrap' }}>{ord.packageName}</td>
+                              <td style={{ padding: '12px', color: '#34d399', fontWeight: 800, whiteSpace: 'nowrap' }}>{ord.currency}{ord.price}</td>
+                              <td style={{ padding: '12px', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.paymentMethod || '-'}</td>
+                              <td style={{ padding: '12px', fontFamily: 'monospace', color: '#a1a1aa', whiteSpace: 'nowrap' }}>{ord.paymentId || '-'}</td>
+                              <td style={{ padding: '12px', whiteSpace: 'nowrap' }}>
+                                <span style={{ padding: '2px 6px', background: '#18181b', borderRadius: '4px', fontSize: '0.65rem' }}>{ord.status}</span>
+                              </td>
+                              <td style={{ padding: '12px', color: '#a855f7', whiteSpace: 'nowrap' }}>{ord.affiliateRef || '-'}</td>
+                              <td style={{ padding: '12px', color: '#71717a', fontSize: '0.65rem', whiteSpace: 'nowrap' }}>{new Date(ord.createdAt).toLocaleString()}</td>
+                            </tr>
+                          ))}
+                          {orders.length === 0 && (
+                            <tr>
+                              <td colSpan={18} style={{ padding: '24px', textAlign: 'center', color: '#71717a' }}>No records found in database.</td>
+                            </tr>
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -2070,17 +3164,35 @@ export default function AdminPage() {
                         <h3 style={{ fontSize: '0.95rem', fontWeight: 900 }}>Creator Sales Performance</h3>
                         <p style={{ fontSize: '0.72rem', color: '#71717a' }}>Real-time orders generated per affiliate referral tag</p>
                       </div>
+
+                      <div style={{ position: 'relative', width: '240px' }}>
+                        <Search style={{ width: '13px', height: '13px', position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#71717a' }} />
+                        <input
+                          type="text"
+                          value={affiliateSearchTerm}
+                          onChange={(e) => setAffiliateSearchTerm(e.target.value)}
+                          placeholder="Search referral name..."
+                          className="admin-input-control"
+                          style={{ paddingLeft: '30px', padding: '6px 10px 6px 30px', fontSize: '0.74rem' }}
+                        />
+                      </div>
                     </div>
 
-                    {affiliateStats.length === 0 ? (
-                      <div style={{ textAlign: 'center', padding: '36px 16px', color: '#71717a', fontSize: '0.80rem' }}>
-                        <Share2 style={{ width: '28px', height: '28px', margin: '0 auto 8px', color: '#3f3f46' }} />
-                        <p>No affiliate sales captured yet.</p>
-                        <span style={{ fontSize: '0.72rem', color: '#52525b' }}>Share creator links above to track sales automatically.</span>
-                      </div>
-                    ) : (
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                        {affiliateStats.map((item, idx) => (
+                    {(() => {
+                      const filteredAffiliates = affiliateStats.filter(a => a.tag.toLowerCase().includes(affiliateSearchTerm.toLowerCase()));
+                      
+                      if (filteredAffiliates.length === 0) {
+                        return (
+                          <div style={{ textAlign: 'center', padding: '36px 16px', color: '#71717a', fontSize: '0.80rem' }}>
+                            <Share2 style={{ width: '28px', height: '28px', margin: '0 auto 8px', color: '#3f3f46' }} />
+                            <p>No affiliate sales found.</p>
+                            <span style={{ fontSize: '0.72rem', color: '#52525b' }}>Share creator links above to track sales automatically.</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                          {filteredAffiliates.map((item, idx) => (
                           <div
                             key={idx}
                             style={{
@@ -2108,7 +3220,7 @@ export default function AdminPage() {
                                   ₹{item.revenue.toLocaleString('en-IN')}
                                 </div>
                                 <div style={{ fontSize: '0.68rem', color: '#34d399', fontWeight: 800 }}>
-                                  Est. Commission (15%): ₹{Math.round(item.revenue * 0.15).toLocaleString('en-IN')}
+                                  Est. Commission (₹100/order): ₹{(item.completedCount * 100).toLocaleString('en-IN')}
                                 </div>
                               </div>
                             </div>
@@ -2154,486 +3266,10 @@ export default function AdminPage() {
                           </div>
                         ))}
                       </div>
-                    )}
+                    );
+                  })()}
                   </div>
                 </div>
-
-              </div>
-            )}
-
-            {/* 6. PRICES & PROMO BANNER */}
-            {currentSection === 'pricing' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                
-                {/* Announcement Bar */}
-                <div className="admin-card">
-                  <div className="admin-card-header">
-                    <div>
-                      <h3 style={{ fontSize: '0.95rem', fontWeight: 900 }}>Top Marquee Banner</h3>
-                      <p style={{ fontSize: '0.72rem', color: '#71717a' }}>Announcement banner text displayed on storefront</p>
-                    </div>
-                  </div>
-
-                  <input
-                    type="text"
-                    value={settings.general?.announcementText || ''}
-                    onChange={(e) => setSettings({
-                      ...settings,
-                      general: { ...settings.general, announcementText: e.target.value }
-                    })}
-                    className="admin-input-control"
-                  />
-                </div>
-
-                {/* Pricing Bundles Grid */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '14px' }}>
-                  
-                  {/* Starter Saver */}
-                  <div className="admin-card">
-                    <span className="admin-label" style={{ marginBottom: '4px', display: 'block' }}>Package 1</span>
-                    <h4 style={{ fontWeight: 900, fontSize: '0.95rem', marginBottom: '12px' }}>Starter Saver Kit</h4>
-
-                    <div className="admin-input-group" style={{ marginBottom: '10px' }}>
-                      <label className="admin-label">Selling Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.solo?.price || 1199}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, solo: { ...settings.pricing?.solo, price: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                        style={{ fontWeight: 900, fontSize: '1.1rem' }}
-                      />
-                    </div>
-
-                    <div className="admin-input-group">
-                      <label className="admin-label">MRP Strike Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.solo?.originalPrice || 1999}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, solo: { ...settings.pricing?.solo, originalPrice: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Little Achiever */}
-                  <div className="admin-card">
-                    <span className="admin-label" style={{ marginBottom: '4px', display: 'block' }}>Package 2 (Popular)</span>
-                    <h4 style={{ fontWeight: 900, fontSize: '0.95rem', marginBottom: '12px' }}>Little Achiever Kit</h4>
-
-                    <div className="admin-input-group" style={{ marginBottom: '10px' }}>
-                      <label className="admin-label">Selling Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.starter?.price || 1499}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, starter: { ...settings.pricing?.starter, price: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                        style={{ fontWeight: 900, fontSize: '1.1rem' }}
-                      />
-                    </div>
-
-                    <div className="admin-input-group">
-                      <label className="admin-label">MRP Strike Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.starter?.originalPrice || 3999}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, starter: { ...settings.pricing?.starter, originalPrice: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Family Bundle */}
-                  <div className="admin-card">
-                    <span className="admin-label" style={{ marginBottom: '4px', display: 'block' }}>Package 3 (VIP)</span>
-                    <h4 style={{ fontWeight: 900, fontSize: '0.95rem', marginBottom: '12px' }}>Family Champions</h4>
-
-                    <div className="admin-input-group" style={{ marginBottom: '10px' }}>
-                      <label className="admin-label">Selling Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.family?.price || 2999}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, family: { ...settings.pricing?.family, price: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                        style={{ fontWeight: 900, fontSize: '1.1rem' }}
-                      />
-                    </div>
-
-                    <div className="admin-input-group">
-                      <label className="admin-label">MRP Strike Price (₹)</label>
-                      <input
-                        type="number"
-                        value={settings.pricing?.family?.originalPrice || 5999}
-                        onChange={(e) => setSettings({
-                          ...settings,
-                          pricing: { ...settings.pricing, family: { ...settings.pricing?.family, originalPrice: Number(e.target.value) } }
-                        })}
-                        className="admin-input-control"
-                      />
-                    </div>
-                  </div>
-
-                </div>
-
-                <button
-                  onClick={handleSaveSettings}
-                  disabled={settingsLoading}
-                  className="admin-btn-primary"
-                  style={{ width: '100%', padding: '14px', justifyContent: 'center' }}
-                >
-                  {settingsLoading ? 'Saving...' : 'Publish Live Prices'}
-                </button>
-
-              </div>
-            )}
-
-            {/* 7. CUSTOM CSS & THEME STYLING (STORED IN DATABASE) */}
-            {currentSection === 'theme' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                
-                {/* Header Banner */}
-                <div className="admin-card">
-                  <div className="admin-card-header" style={{ marginBottom: '14px' }}>
-                    <div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <Palette style={{ width: '18px', height: '18px', color: '#38bdf8' }} />
-                        <h3 style={{ fontSize: '1rem', fontWeight: 900 }}>Custom CSS & Theme Styles</h3>
-                      </div>
-                      <p style={{ fontSize: '0.74rem', color: '#71717a', marginTop: '2px' }}>
-                        All colors and CSS rules are stored persistently in your SQLite database (<code>settings</code> table) and applied site-wide in real time.
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={handleSaveSettings}
-                      disabled={settingsLoading}
-                      className="admin-btn-primary"
-                      style={{ padding: '8px 16px', fontSize: '0.78rem' }}
-                    >
-                      {settingsLoading ? 'Saving...' : '💾 Save CSS to DB'}
-                    </button>
-                  </div>
-
-                  {/* 1-Click Theme Presets */}
-                  <div style={{ background: '#09090b', padding: '12px 14px', borderRadius: '12px', border: '1px solid #27272a', marginBottom: '16px' }}>
-                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#a1a1aa', textTransform: 'uppercase', letterSpacing: '0.04em', display: 'block', marginBottom: '8px' }}>
-                      ⚡ 1-Click Theme Presets:
-                    </span>
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => setSettings({
-                          ...settings,
-                          theme: {
-                            ...settings.theme,
-                            primaryColor: '#0d9488',
-                            accentColor: '#f59e0b',
-                            bannerBg: '#000000',
-                            bannerTextColor: '#ffffff',
-                            buttonBg: '#000000',
-                            buttonTextColor: '#ffffff',
-                            borderRadius: '16px'
-                          }
-                        })}
-                        style={{ background: '#18181b', color: '#2dd4bf', border: '1px solid #27272a', padding: '6px 12px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0d9488' }}></span>
-                        Teal & Gold (Default)
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSettings({
-                          ...settings,
-                          theme: {
-                            ...settings.theme,
-                            primaryColor: '#059669',
-                            accentColor: '#fbbf24',
-                            bannerBg: '#064e3b',
-                            bannerTextColor: '#ffffff',
-                            buttonBg: '#059669',
-                            buttonTextColor: '#ffffff',
-                            borderRadius: '16px'
-                          }
-                        })}
-                        style={{ background: '#18181b', color: '#34d399', border: '1px solid #27272a', padding: '6px 12px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#059669' }}></span>
-                        Royal Emerald
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSettings({
-                          ...settings,
-                          theme: {
-                            ...settings.theme,
-                            primaryColor: '#0284c7',
-                            accentColor: '#38bdf8',
-                            bannerBg: '#0f172a',
-                            bannerTextColor: '#38bdf8',
-                            buttonBg: '#0284c7',
-                            buttonTextColor: '#ffffff',
-                            borderRadius: '14px'
-                          }
-                        })}
-                        style={{ background: '#18181b', color: '#38bdf8', border: '1px solid #27272a', padding: '6px 12px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#0284c7' }}></span>
-                        Sapphire Cyber
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => setSettings({
-                          ...settings,
-                          theme: {
-                            ...settings.theme,
-                            primaryColor: '#000000',
-                            accentColor: '#52525b',
-                            bannerBg: '#000000',
-                            bannerTextColor: '#ffffff',
-                            buttonBg: '#000000',
-                            buttonTextColor: '#ffffff',
-                            borderRadius: '12px'
-                          }
-                        })}
-                        style={{ background: '#18181b', color: '#e4e4e7', border: '1px solid #27272a', padding: '6px 12px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
-                      >
-                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#000000', border: '1px solid #52525b' }}></span>
-                        Luxury Monochrome
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Visual Color Controls Grid */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px', marginBottom: '16px' }}>
-                    
-                    {/* Primary Color */}
-                    <div className="admin-input-group">
-                      <label className="admin-label">Primary Brand Color</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="color"
-                          value={settings.theme?.primaryColor || '#0d9488'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, primaryColor: e.target.value }
-                          })}
-                          style={{ width: '38px', height: '38px', borderRadius: '8px', border: '1px solid #27272a', background: 'transparent', cursor: 'pointer', padding: 0 }}
-                        />
-                        <input
-                          type="text"
-                          value={settings.theme?.primaryColor || '#0d9488'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, primaryColor: e.target.value }
-                          })}
-                          className="admin-input-control"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Accent Color */}
-                    <div className="admin-input-group">
-                      <label className="admin-label">Accent / Highlight Color</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="color"
-                          value={settings.theme?.accentColor || '#f59e0b'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, accentColor: e.target.value }
-                          })}
-                          style={{ width: '38px', height: '38px', borderRadius: '8px', border: '1px solid #27272a', background: 'transparent', cursor: 'pointer', padding: 0 }}
-                        />
-                        <input
-                          type="text"
-                          value={settings.theme?.accentColor || '#f59e0b'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, accentColor: e.target.value }
-                          })}
-                          className="admin-input-control"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Announcement Banner BG */}
-                    <div className="admin-input-group">
-                      <label className="admin-label">Announcement Banner BG</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="color"
-                          value={settings.theme?.bannerBg || '#000000'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, bannerBg: e.target.value }
-                          })}
-                          style={{ width: '38px', height: '38px', borderRadius: '8px', border: '1px solid #27272a', background: 'transparent', cursor: 'pointer', padding: 0 }}
-                        />
-                        <input
-                          type="text"
-                          value={settings.theme?.bannerBg || '#000000'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, bannerBg: e.target.value }
-                          })}
-                          className="admin-input-control"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Pay Button BG */}
-                    <div className="admin-input-group">
-                      <label className="admin-label">Main Pay Button Color</label>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <input
-                          type="color"
-                          value={settings.theme?.buttonBg || '#000000'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, buttonBg: e.target.value }
-                          })}
-                          style={{ width: '38px', height: '38px', borderRadius: '8px', border: '1px solid #27272a', background: 'transparent', cursor: 'pointer', padding: 0 }}
-                        />
-                        <input
-                          type="text"
-                          value={settings.theme?.buttonBg || '#000000'}
-                          onChange={(e) => setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, buttonBg: e.target.value }
-                          })}
-                          className="admin-input-control"
-                          style={{ fontFamily: 'monospace' }}
-                        />
-                      </div>
-                    </div>
-
-                  </div>
-
-                  {/* Custom CSS Code Editor Section */}
-                  <div style={{ borderTop: '1px solid #27272a', paddingTop: '16px' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Code style={{ width: '16px', height: '16px', color: '#a1a1aa' }} />
-                        <label className="admin-label" style={{ margin: 0 }}>Custom CSS Code (Stored in DB)</label>
-                      </div>
-                      <span style={{ fontSize: '0.70rem', color: '#71717a' }}>
-                        Write any valid CSS rules to customize buttons, cards, or text
-                      </span>
-                    </div>
-
-                    {/* Quick Snippet Inserts */}
-                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const snippet = `\n/* Custom Glowing Pay Button */\n.checkout-submit-btn {\n  box-shadow: 0 10px 25px rgba(13, 148, 136, 0.4) !important;\n  border-radius: 14px !important;\n}\n`;
-                          setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, customCss: (settings.theme?.customCss || '') + snippet }
-                          });
-                        }}
-                        style={{ background: '#18181b', border: '1px solid #27272a', color: '#a1a1aa', borderRadius: '6px', padding: '3px 8px', fontSize: '0.68rem', cursor: 'pointer' }}
-                      >
-                        + Glowing Pay Button
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const snippet = `\n/* Glassmorphism Checkout Card */\n.checkout-form-card {\n  backdrop-filter: blur(12px) !important;\n  border: 2px solid #000000 !important;\n  box-shadow: 0 20px 40px rgba(0,0,0,0.08) !important;\n}\n`;
-                          setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, customCss: (settings.theme?.customCss || '') + snippet }
-                          });
-                        }}
-                        style={{ background: '#18181b', border: '1px solid #27272a', color: '#a1a1aa', borderRadius: '6px', padding: '3px 8px', fontSize: '0.68rem', cursor: 'pointer' }}
-                      >
-                        + Glassmorphism Card
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const snippet = `\n/* Smooth Rounded Corners */\n.delivering-item-card, .checkout-form-card, .package-item-card {\n  border-radius: 20px !important;\n}\n`;
-                          setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, customCss: (settings.theme?.customCss || '') + snippet }
-                          });
-                        }}
-                        style={{ background: '#18181b', border: '1px solid #27272a', color: '#a1a1aa', borderRadius: '6px', padding: '3px 8px', fontSize: '0.68rem', cursor: 'pointer' }}
-                      >
-                        + Extra Rounded Corners
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setSettings({
-                            ...settings,
-                            theme: { ...settings.theme, customCss: '' }
-                          });
-                        }}
-                        style={{ background: '#18181b', border: '1px solid #ef4444', color: '#ef4444', borderRadius: '6px', padding: '3px 8px', fontSize: '0.68rem', cursor: 'pointer', marginLeft: 'auto' }}
-                      >
-                        Clear CSS
-                      </button>
-                    </div>
-
-                    <textarea
-                      rows={10}
-                      value={settings.theme?.customCss || ''}
-                      onChange={(e) => setSettings({
-                        ...settings,
-                        theme: { ...settings.theme, customCss: e.target.value }
-                      })}
-                      placeholder="/* Write your custom CSS here. It will be stored in SQLite database and applied live across the entire website */"
-                      className="admin-input-control"
-                      style={{
-                        fontFamily: 'Consolas, Monaco, monospace',
-                        fontSize: '0.80rem',
-                        lineHeight: 1.5,
-                        background: '#09090b',
-                        color: '#38bdf8',
-                        border: '1px solid #27272a',
-                        padding: '12px',
-                        whiteSpace: 'pre',
-                        tabSize: 2
-                      }}
-                    />
-                  </div>
-
-                  <button
-                    onClick={handleSaveSettings}
-                    disabled={settingsLoading}
-                    className="admin-btn-primary"
-                    style={{ width: '100%', padding: '14px', justifyContent: 'center', marginTop: '16px' }}
-                  >
-                    {settingsLoading ? 'Saving to Database...' : '💾 Save & Apply CSS to Database'}
-                  </button>
-
-                </div>
-
               </div>
             )}
 

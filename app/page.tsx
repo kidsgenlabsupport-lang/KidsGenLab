@@ -11,6 +11,7 @@ const WhatsAppFloatButton = dynamic(() => import("../components/WhatsAppFloatBut
 import Footer from "../components/Footer";
 import { getActiveAffiliateRef } from "../components/AffiliateTracker";
 import GoogleTranslate from "../components/GoogleTranslate";
+import VisitorTracker from "../components/VisitorTracker";
 
 const JumpingTopSiyaCoin = ({ size, onClick, style = {} }: { size?: number; onClick?: (e: React.MouseEvent) => void; style?: React.CSSProperties }) => (
   <span
@@ -713,7 +714,7 @@ const TradeFunSection = () => {
           <div>
             <h4 style={{ fontSize: isMobile ? '1.12rem' : '1.35rem', fontWeight: 900, marginBottom: '4px', color: 'var(--accent-yellow)' }}>No Money? No Problem!</h4>
             <p style={{ fontSize: isMobile ? '0.82rem' : '0.92rem', lineHeight: isMobile ? 1.4 : 1.5, opacity: 0.92, fontWeight: 500, margin: 0 }}>
-              At <strong style={{ color: 'var(--accent-yellow)' }}>KidsGen Lab</strong>, we teach that trading isn&apos;t just about cash—it&apos;s about <strong style={{ color: '#38bdf8' }}>Value Exchange</strong>. Before money existed, people swapped things they had for things they needed (<strong style={{ color: '#38bdf8' }}>Bartering</strong>). It builds great negotiation skills!
+              At <strong style={{ color: 'var(--accent-yellow)' }}>KidsGenLab</strong>, we teach that trading isn&apos;t just about cash—it&apos;s about <strong style={{ color: '#38bdf8' }}>Value Exchange</strong>. Before money existed, people swapped things they had for things they needed (<strong style={{ color: '#38bdf8' }}>Bartering</strong>). It builds great negotiation skills!
             </p>
           </div>
         </motion.div>
@@ -891,7 +892,15 @@ const courierKeyframesY = graphPoints.map(pt => pt.y - 70);
 export default function Home() {
   const [hoveredPoint, setHoveredPoint] = useState<{ x: number, y: number, p: number } | null>(null);
   const [showPlayMenu, setShowPlayMenu] = useState(false);
+  const [showPlayWalkthrough, setShowPlayWalkthrough] = useState(false);
   const [language, setLanguage] = useState<'en' | 'hi' | 'ta'>('en');
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowPlayWalkthrough(true);
+    }, 5000);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Top Coin Flight & Sparkle State
   const [isTopCoinFlying, setIsTopCoinFlying] = useState(false);
@@ -1250,22 +1259,22 @@ export default function Home() {
     {
       name: language === 'hi' ? 'घर (Shelter)' : language === 'ta' ? 'வீடு (Shelter)' : 'House (Shelter)',
       desc: language === 'hi' ? 'रहने और सोने के लिए एक सुरक्षित जगह।' : language === 'ta' ? 'வாழவும் உறங்கவும் ஒரு பாதுகாப்பான இடம்.' : 'A safe place to live and sleep.',
-      img: '/kidsgenlab24.jpg',
+      img: '/spree_shelter.jpg',
     },
     {
       name: language === 'hi' ? 'भोजन (Food)' : language === 'ta' ? 'உணவு (Food)' : 'Healthy Food',
       desc: language === 'hi' ? 'मजबूत बनने के लिए स्वस्थ भोजन और फल।' : language === 'ta' ? 'ஆரோக்கியமாக வளர சத்தான உணவுகள்.' : 'Healthy meals and fruits to grow strong.',
-      img: '/kidsgenlab23.jpg',
+      img: '/spree_food.jpg',
     },
     {
       name: language === 'hi' ? 'कपड़े (Clothing)' : language === 'ta' ? 'ஆடை (Clothing)' : 'Clothes (Clothing)',
       desc: language === 'hi' ? 'आपको गर्म और सुरक्षित रखने के लिए।' : language === 'ta' ? 'உங்களை வெப்பமாகவும் பாதுகாப்பாகவும் வைத்திருக்க.' : 'To keep you warm and protected.',
-      img: '/kidsgenlab22.jpg',
+      img: '/spree_clothing.jpg',
     },
     {
       name: language === 'hi' ? 'शिक्षा (Education)' : language === 'ta' ? 'கல்வி (Education)' : 'Books & Study',
       desc: language === 'hi' ? 'नया सीखने और आगे बढ़ने के लिए किताबें।' : language === 'ta' ? 'புதிய விஷயங்களை கற்றுக்கொள்ள புத்தகங்கள்.' : 'Books and study materials to learn and grow.',
-      img: '/kidsgenlab21.jpg',
+      img: '/spree_education.jpg',
     }
   ];
 
@@ -1273,41 +1282,41 @@ export default function Home() {
     {
       name: language === 'hi' ? 'आइसक्रीम' : language === 'ta' ? 'ஐஸ்கிரீம்' : 'Ice Cream',
       desc: language === 'hi' ? 'खाने के बाद एक मीठी और स्वादिष्ट ट्रीट।' : language === 'ta' ? 'சாப்பாட்டிற்கு பின் ஒரு இனிமையான சுவை.' : 'A sweet and delicious treat for dessert.',
-      img: '/kidsgenlab42.jpg',
+      img: '/spree_icecream.jpg',
     },
     {
       name: language === 'hi' ? 'खिलौने (Toys)' : language === 'ta' ? 'பொம்மைகள்' : 'Toys',
       desc: language === 'hi' ? 'दोस्तों के साथ खेलने के लिए मजेदार चीजें।' : language === 'ta' ? 'நண்பர்களுடன் விளையாட வேடிக்கையான பொம்மைகள்.' : 'Fun things to play with friends.',
-      img: '/kidsgenlab43.jpg',
+      img: '/spree_toys.jpg',
     },
     {
       name: language === 'hi' ? 'वीडियो गेम्स' : language === 'ta' ? 'வீடியோ கேம்ஸ்' : 'Video Games',
       desc: language === 'hi' ? 'शानदार डिजिटल रोमांच और खेल।' : language === 'ta' ? 'சுவாரஸ்யமான கணினி விளையாட்டுகள்.' : 'Cool digital adventures and gameplay.',
-      img: '/kidsgenlab41.jpg',
+      img: '/spree_videogames.jpg',
     },
     {
       name: language === 'hi' ? 'साइकिल' : language === 'ta' ? 'மிதிவண்டி' : 'Bicycle',
       desc: language === 'hi' ? 'पार्क में सवारी करने के लिए एक शानदार साइकिल।' : language === 'ta' ? 'பூங்காவில் ஓட்டி மகிழ ஒரு மிதிவண்டி.' : 'A shiny new bicycle to ride in the park.',
-      img: '/kidsgenlab40.jpg',
+      img: '/spree_bicycle.jpg',
     }
   ];
 
   // --- 1. Slider Gallery State ---
-  const [currentSlide, setCurrentSlide] = useState(1); // Default to 'sibling' (index 1) to match default selectedPackage
-  const totalSlides = 3;
-  const packageKeys: Array<'solo' | 'sibling' | 'family'> = ['solo', 'sibling', 'family'];
+  const [currentSlide, setCurrentSlide] = useState(2); // Default to 'sibling' (index 2) to match default selectedPackage
+  const totalSlides = 4;
+  const slidePackageMap: Array<'solo' | 'sibling' | 'family'> = ['solo', 'solo', 'sibling', 'family'];
 
   const nextSlide = () => {
     setCurrentSlide((prev) => {
       const next = (prev + 1) % totalSlides;
-      setSelectedPackage(packageKeys[next]);
+      setSelectedPackage(slidePackageMap[next]);
       return next;
     });
   };
   const prevSlide = () => {
     setCurrentSlide((prev) => {
       const next = (prev - 1 + totalSlides) % totalSlides;
-      setSelectedPackage(packageKeys[next]);
+      setSelectedPackage(slidePackageMap[next]);
       return next;
     });
   };
@@ -1330,7 +1339,7 @@ export default function Home() {
 
   const goToSlide = (index: number) => {
     setCurrentSlide(index);
-    setSelectedPackage(packageKeys[index]);
+    setSelectedPackage(slidePackageMap[index]);
   };
 
   const handleScrollTo = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
@@ -1633,49 +1642,55 @@ export default function Home() {
               <span>Our Vision</span>
             </Link>
             {/* Gamified 3D Let's Play Arcade Button */}
-            <button
-              suppressHydrationWarning={true}
-              onClick={() => setShowPlayMenu(!showPlayMenu)}
-              className="nav-btn-play"
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'linear-gradient(180deg, #FBBF24 0%, #D97706 100%)',
-                color: '#1E293B',
-                border: '2px solid #78350F',
-                padding: '8px 16px',
-                borderRadius: '16px',
-                boxShadow: '0 4px 0 #78350F, 0 6px 12px rgba(245, 158, 11, 0.4)',
-                fontSize: '0.85rem',
-                fontWeight: 900,
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                fontFamily: 'inherit',
-                letterSpacing: '0.3px',
-                transition: 'all 0.15s ease',
-                textShadow: '0 1px 1px rgba(255, 255, 255, 0.4)'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 0 #78350F, 0 10px 16px rgba(245, 158, 11, 0.5)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 0 #78350F, 0 6px 12px rgba(245, 158, 11, 0.4)';
-              }}
-              onMouseDown={(e) => {
-                e.currentTarget.style.transform = 'translateY(3px)';
-                e.currentTarget.style.boxShadow = '0 1px 0 #78350F';
-              }}
-              onMouseUp={(e) => {
-                e.currentTarget.style.transform = 'translateY(-2px)';
-                e.currentTarget.style.boxShadow = '0 6px 0 #78350F, 0 10px 16px rgba(245, 158, 11, 0.5)';
-              }}
-            >
-              <span>Let&apos;s Play</span>
-              <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s ease', transform: showPlayMenu ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
-            </button>
+            <div style={{ position: 'relative' }}>
+
+              <button
+                suppressHydrationWarning={true}
+                onClick={() => {
+                  setShowPlayMenu(!showPlayMenu);
+                  if (showPlayWalkthrough) setShowPlayWalkthrough(false);
+                }}
+                className="nav-btn-play"
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'linear-gradient(180deg, #FBBF24 0%, #D97706 100%)',
+                  color: '#1E293B',
+                  border: '2px solid #78350F',
+                  padding: '8px 16px',
+                  borderRadius: '16px',
+                  boxShadow: '0 4px 0 #78350F, 0 6px 12px rgba(245, 158, 11, 0.4)',
+                  fontSize: '0.85rem',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  fontFamily: 'inherit',
+                  letterSpacing: '0.3px',
+                  transition: 'all 0.15s ease',
+                  textShadow: '0 1px 1px rgba(255, 255, 255, 0.4)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 0 #78350F, 0 10px 16px rgba(245, 158, 11, 0.5)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = '0 4px 0 #78350F, 0 6px 12px rgba(245, 158, 11, 0.4)';
+                }}
+                onMouseDown={(e) => {
+                  e.currentTarget.style.transform = 'translateY(3px)';
+                  e.currentTarget.style.boxShadow = '0 1px 0 #78350F';
+                }}
+                onMouseUp={(e) => {
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = '0 6px 0 #78350F, 0 10px 16px rgba(245, 158, 11, 0.5)';
+                }}
+              >
+                <span>Let&apos;s Play</span>
+                <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s ease', transform: showPlayMenu ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </button>
+            </div>
             <GoogleTranslate />
           </nav>
         </div>
@@ -1791,6 +1806,7 @@ export default function Home() {
         >
           <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
             <img src="/kidsgenlab25.jpeg" alt="Starter Saver Edition (1,199)" className="slider-slide" />
+            <img src="/startersaveredition.png" alt="Starter Saver Edition Kit (1,199)" className="slider-slide" />
             <img src="/kidsgenlab26.jpeg" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
             <img src="/kidsgenlab27.jpeg" alt="Family Champions Bundle (2,999)" className="slider-slide" />
           </div>
@@ -1799,7 +1815,7 @@ export default function Home() {
           <button suppressHydrationWarning={true} className="slider-btn next-btn" onClick={nextSlide} aria-label="Next image">❯</button>
 
           <div className="slider-dots">
-            {[0, 1, 2].map((i) => (
+            {[0, 1, 2, 3].map((i) => (
               <span key={i} className={`dot ${currentSlide === i ? "active" : ""}`} onClick={() => goToSlide(i)}></span>
             ))}
           </div>
@@ -1824,7 +1840,7 @@ export default function Home() {
             
             {/* Solo Package */}
             <div 
-              onClick={() => { setSelectedPackage('solo'); setCurrentSlide(0); }}
+              onClick={() => { setSelectedPackage('solo'); setCurrentSlide(1); }}
               style={{
                 padding: '16px',
                 borderRadius: '16px',
@@ -1839,7 +1855,7 @@ export default function Home() {
               }}
             >
               <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'start' }}>
-                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'solo'} onChange={() => { setSelectedPackage('solo'); setCurrentSlide(0); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
+                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'solo'} onChange={() => { setSelectedPackage('solo'); setCurrentSlide(1); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Starter Saver Edition</div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>book + stickers set</div>
@@ -1853,7 +1869,7 @@ export default function Home() {
 
             {/* Sibling Package */}
             <div 
-              onClick={() => { setSelectedPackage('sibling'); setCurrentSlide(1); }}
+              onClick={() => { setSelectedPackage('sibling'); setCurrentSlide(2); }}
               style={{
                 padding: '16px',
                 borderRadius: '16px',
@@ -1883,7 +1899,7 @@ export default function Home() {
               }}>Best Value</div>
               
               <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'start' }}>
-                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'sibling'} onChange={() => { setSelectedPackage('sibling'); setCurrentSlide(1); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
+                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'sibling'} onChange={() => { setSelectedPackage('sibling'); setCurrentSlide(2); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Little Achiever Kit</div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>book + stickers set + pencil + keychain + certificate</div>
@@ -1897,7 +1913,7 @@ export default function Home() {
 
             {/* Family Package */}
             <div 
-              onClick={() => { setSelectedPackage('family'); setCurrentSlide(2); }}
+              onClick={() => { setSelectedPackage('family'); setCurrentSlide(3); }}
               style={{
                 padding: '16px',
                 borderRadius: '16px',
@@ -1912,7 +1928,7 @@ export default function Home() {
               }}
             >
               <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'start' }}>
-                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'family'} onChange={() => { setSelectedPackage('family'); setCurrentSlide(2); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
+                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'family'} onChange={() => { setSelectedPackage('family'); setCurrentSlide(3); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Family Champions Bundle</div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>books + stickers set + pencil + keychain + certificate + parent guide and letter</div>
@@ -1989,7 +2005,7 @@ export default function Home() {
           </div>
           <div className="future-content">
             <h2><StaticSiyaCoin size={44} flipped={true} /> Master the Game of Money — Tactical Skills for the Real World</h2>
-            <p><strong>KidsGen Lab</strong> replaces boring theory with high-stakes simulations and real-world projects.We don't just teach kids how to count money-we teach them how to command it,building the executive confidence and tactical mindset needed to thrive in a volatile economy.</p>
+            <p><strong>KidsGenLab</strong> replaces boring theory with high-stakes simulations and real-world projects.We don't just teach kids how to count money-we teach them how to command it,building the executive confidence and tactical mindset needed to thrive in a volatile economy.</p>
 
             <div className="skills-tags">
               <span className="skill-tag">Battle-Tested by Parents</span>
@@ -3174,6 +3190,7 @@ export default function Home() {
       </AnimatePresence>
 
       <WhatsAppFloatButton />
+      <VisitorTracker />
     </>
   );
 }
