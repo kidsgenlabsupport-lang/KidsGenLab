@@ -1259,10 +1259,10 @@ export default function StoryPage() {
               <img
                 src={
                   selectedPackage === 'solo'
-                    ? '/kidsgenlab25.jpeg'
+                    ? '/startersaveredition.png'
                     : selectedPackage === 'sibling'
-                    ? '/kidsgenlab26.jpeg'
-                    : '/kidsgenlab27.jpeg'
+                    ? '/littleachieverkit.png'
+                    : '/familychampionsbundle.png'
                 }
                 alt={packages[selectedPackage].name}
                 className="w-full max-h-72 object-contain rounded-xl shadow-lg transform hover:scale-105 transition-transform"

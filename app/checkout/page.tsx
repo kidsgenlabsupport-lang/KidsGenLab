@@ -41,7 +41,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 1999,
     tagline: 'Ideal for 1 Child • Physical Book + 7 Stickers',
     badge: 'Standard',
-    image: '/kidsgenlab25.jpeg',
+    image: '/startersaveredition.png',
     features: 'Physical Activity Book + 7 Superpower Stickers Set'
   },
   sibling: {
@@ -51,7 +51,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 3999,
     tagline: 'Ages 7-12 • Book + Stickers + Medal + Certificate',
     badge: 'Most Popular',
-    image: '/kidsgenlab26.jpeg',
+    image: '/littleachieverkit.png',
     features: 'Complete Book + Superpower Stickers + Medal + Certificate'
   },
   family: {
@@ -61,7 +61,7 @@ const defaultPackages: Record<'solo' | 'sibling' | 'family', PackageInfo> = {
     originalPrice: 5999,
     tagline: 'VIP Family Kit + Parent Master Blueprint',
     badge: 'VIP Bundle',
-    image: '/kidsgenlab27.jpeg',
+    image: '/familychampionsbundle.png',
     features: 'Full Family Kit + Parent Master Guide & Wealth Blueprint'
   }
 };

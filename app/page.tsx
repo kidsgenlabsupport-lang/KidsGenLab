@@ -1302,9 +1302,9 @@ export default function Home() {
   ];
 
   // --- 1. Slider Gallery State ---
-  const [currentSlide, setCurrentSlide] = useState(2); // Default to 'sibling' (index 2) to match default selectedPackage
-  const totalSlides = 4;
-  const slidePackageMap: Array<'solo' | 'sibling' | 'family'> = ['solo', 'solo', 'sibling', 'family'];
+  const [currentSlide, setCurrentSlide] = useState(3); // Default to 'sibling' kit mockup (index 3) to match default selectedPackage
+  const totalSlides = 6;
+  const slidePackageMap: Array<'solo' | 'sibling' | 'family'> = ['solo', 'solo', 'sibling', 'sibling', 'family', 'family'];
 
   const nextSlide = () => {
     setCurrentSlide((prev) => {
@@ -1808,14 +1808,16 @@ export default function Home() {
             <img src="/kidsgenlab25.jpeg" alt="Starter Saver Edition (1,199)" className="slider-slide" />
             <img src="/startersaveredition.png" alt="Starter Saver Edition Kit (1,199)" className="slider-slide" />
             <img src="/kidsgenlab26.jpeg" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
+            <img src="/littleachieverkit.png" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
             <img src="/kidsgenlab27.jpeg" alt="Family Champions Bundle (2,999)" className="slider-slide" />
+            <img src="/familychampionsbundle.png" alt="Family Champions Bundle Kit (2,999)" className="slider-slide" />
           </div>
 
           <button suppressHydrationWarning={true} className="slider-btn prev-btn" onClick={prevSlide} aria-label="Previous image">❮</button>
           <button suppressHydrationWarning={true} className="slider-btn next-btn" onClick={nextSlide} aria-label="Next image">❯</button>
 
           <div className="slider-dots">
-            {[0, 1, 2, 3].map((i) => (
+            {[0, 1, 2, 3, 4, 5].map((i) => (
               <span key={i} className={`dot ${currentSlide === i ? "active" : ""}`} onClick={() => goToSlide(i)}></span>
             ))}
           </div>
@@ -1869,7 +1871,7 @@ export default function Home() {
 
             {/* Sibling Package */}
             <div 
-              onClick={() => { setSelectedPackage('sibling'); setCurrentSlide(2); }}
+              onClick={() => { setSelectedPackage('sibling'); setCurrentSlide(3); }}
               style={{
                 padding: '16px',
                 borderRadius: '16px',
@@ -1899,7 +1901,7 @@ export default function Home() {
               }}>Best Value</div>
               
               <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'start' }}>
-                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'sibling'} onChange={() => { setSelectedPackage('sibling'); setCurrentSlide(2); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
+                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'sibling'} onChange={() => { setSelectedPackage('sibling'); setCurrentSlide(3); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Little Achiever Kit</div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>book + stickers set + pencil + keychain + certificate</div>
@@ -1913,7 +1915,7 @@ export default function Home() {
 
             {/* Family Package */}
             <div 
-              onClick={() => { setSelectedPackage('family'); setCurrentSlide(3); }}
+              onClick={() => { setSelectedPackage('family'); setCurrentSlide(5); }}
               style={{
                 padding: '16px',
                 borderRadius: '16px',
@@ -1928,7 +1930,7 @@ export default function Home() {
               }}
             >
               <div style={{ flex: 1, display: 'flex', gap: '10px', alignItems: 'start' }}>
-                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'family'} onChange={() => { setSelectedPackage('family'); setCurrentSlide(3); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
+                <input suppressHydrationWarning={true} type="radio" checked={selectedPackage === 'family'} onChange={() => { setSelectedPackage('family'); setCurrentSlide(5); }} style={{ pointerEvents: 'none', marginTop: '4px' }} />
                 <div>
                   <div style={{ fontWeight: 800, fontSize: '1rem', color: '#0f172a' }}>Family Champions Bundle</div>
                   <div style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '2px' }}>books + stickers set + pencil + keychain + certificate + parent guide and letter</div>
