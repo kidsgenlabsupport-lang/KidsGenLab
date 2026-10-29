@@ -359,7 +359,7 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
                   </span>
                 </div>
 
-                {/* Exact Requested Address */}
+                {/* Registered Office & Location */}
                 <div style={{ marginBottom: "14px" }}>
                   <address
                     style={{
@@ -371,10 +371,8 @@ export default function Footer({ showTrustBadges = true, showAllRights = false }
                     }}
                   >
                     <div style={{ fontWeight: 700, color: "#0f172a" }}>
-                      14a, ADHILAKSHMI NAGAR, MATHULAMPETT
+                      KUMBAKONAM, TAMIL NADU
                     </div>
-                    <div>Block- 1, MARRIYAMMAN KOVIL MATHULAMPETT</div>
-                    <div>KUMBAKONAM, TAMIL NADU</div>
                     <div style={{ fontWeight: 700, color: "#0f172a" }}>612001, India</div>
                   </address>
                 </div>

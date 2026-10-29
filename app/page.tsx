@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { motion, useAnimation, AnimatePresence } from "framer-motion";
-import { ShoppingCart, RotateCcw, ArrowRight, ShieldCheck } from "lucide-react";
+import { ShoppingCart, RotateCcw, ArrowRight, ShieldCheck, Maximize2, X, ChevronLeft, ChevronRight } from "lucide-react";
 import dynamic from "next/dynamic";
 const WhatsAppFloatButton = dynamic(() => import("../components/WhatsAppFloatButton"), { ssr: false });
 import Footer from "../components/Footer";
@@ -1301,8 +1301,18 @@ export default function Home() {
     }
   ];
 
-  // --- 1. Slider Gallery State ---
+  // --- 1. Slider Gallery State & Slides ---
+  const productSlides = [
+    { src: "/kidsgenlab25.jpeg", alt: "Starter Saver Edition (1,199)", title: "Starter Saver Edition", badge: "SOLO EDITION" },
+    { src: "/startersaveredition.png", alt: "Starter Saver Edition Kit (1,199)", title: "Starter Saver Edition Kit", badge: "SOLO KIT" },
+    { src: "/kidsgenlab26.jpeg", alt: "Little Achiever Kit - Best Value (1,499)", title: "Little Achiever Kit (Best Value)", badge: "BEST VALUE" },
+    { src: "/littleachieverkit.png", alt: "Little Achiever Kit - Best Value (1,499)", title: "Little Achiever Kit Components", badge: "BEST VALUE KIT" },
+    { src: "/kidsgenlab27.jpeg", alt: "Family Champions Bundle (2,999)", title: "Family Champions Bundle", badge: "FAMILY CHAMPIONS" },
+    { src: "/familychampionsbundle.png", alt: "Family Champions Bundle Kit (2,999)", title: "Family Champions Bundle Kit", badge: "MEGA BUNDLE" },
+  ];
+
   const [currentSlide, setCurrentSlide] = useState(3); // Default to 'sibling' kit mockup (index 3) to match default selectedPackage
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const totalSlides = 6;
   const slidePackageMap: Array<'solo' | 'sibling' | 'family'> = ['solo', 'solo', 'sibling', 'sibling', 'family', 'family'];
 
@@ -1320,6 +1330,17 @@ export default function Home() {
       return next;
     });
   };
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setIsLightboxOpen(false);
+      if (e.key === 'ArrowRight') nextSlide();
+      if (e.key === 'ArrowLeft') prevSlide();
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isLightboxOpen]);
   const [productTouchStart, setProductTouchStart] = useState<number | null>(null);
   const [productTouchEnd, setProductTouchEnd] = useState<number | null>(null);
 
@@ -1797,28 +1818,50 @@ export default function Home() {
 
       {/* Product Layout Section */}
       <main className="product-layout container" id="overview">
-        {/* Interactive Slider Gallery */}
+        {/* Interactive Slider Gallery (Thick 3D Box) */}
         <div
           className="product-gallery slider-gallery"
           onTouchStart={onProductTouchStart}
           onTouchMove={onProductTouchMove}
           onTouchEnd={onProductTouchEnd}
         >
-          <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
-            <img src="/kidsgenlab25.jpeg" alt="Starter Saver Edition (1,199)" className="slider-slide" />
-            <img src="/startersaveredition.png" alt="Starter Saver Edition Kit (1,199)" className="slider-slide" />
-            <img src="/kidsgenlab26.jpeg" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
-            <img src="/littleachieverkit.png" alt="Little Achiever Kit - Best Value (1,499)" className="slider-slide" />
-            <img src="/kidsgenlab27.jpeg" alt="Family Champions Bundle (2,999)" className="slider-slide" />
-            <img src="/familychampionsbundle.png" alt="Family Champions Bundle Kit (2,999)" className="slider-slide" />
+          {/* Quick Enlarge / View Separately Button */}
+          <button
+            suppressHydrationWarning={true}
+            type="button"
+            className="gallery-expand-btn"
+            onClick={() => setIsLightboxOpen(true)}
+            title="Click to view slide gallery separately in high resolution"
+            aria-label="View slide gallery separately"
+          >
+            <Maximize2 size={13} />
+            <span>View Separately</span>
+          </button>
+
+          <div
+            className="slider-viewport"
+            onClick={() => setIsLightboxOpen(true)}
+            title="Click to view slide gallery separately"
+            style={{ cursor: 'zoom-in' }}
+          >
+            <div className="slider-wrapper" style={{ transform: `translateX(-${currentSlide * 100}%)` }}>
+              {productSlides.map((slide, idx) => (
+                <img
+                  key={idx}
+                  src={slide.src}
+                  alt={slide.alt}
+                  className="slider-slide"
+                />
+              ))}
+            </div>
           </div>
 
-          <button suppressHydrationWarning={true} className="slider-btn prev-btn" onClick={prevSlide} aria-label="Previous image">❮</button>
-          <button suppressHydrationWarning={true} className="slider-btn next-btn" onClick={nextSlide} aria-label="Next image">❯</button>
+          <button suppressHydrationWarning={true} className="slider-btn prev-btn" onClick={(e) => { e.stopPropagation(); prevSlide(); }} aria-label="Previous image">❮</button>
+          <button suppressHydrationWarning={true} className="slider-btn next-btn" onClick={(e) => { e.stopPropagation(); nextSlide(); }} aria-label="Next image">❯</button>
 
           <div className="slider-dots">
-            {[0, 1, 2, 3, 4, 5].map((i) => (
-              <span key={i} className={`dot ${currentSlide === i ? "active" : ""}`} onClick={() => goToSlide(i)}></span>
+            {productSlides.map((_, i) => (
+              <span key={i} className={`dot ${currentSlide === i ? "active" : ""}`} onClick={(e) => { e.stopPropagation(); goToSlide(i); }}></span>
             ))}
           </div>
         </div>
@@ -1995,6 +2038,96 @@ export default function Home() {
           </div>
         </div>
       </main>
+
+      {/* Separate View Lightbox Modal (Thick Elevated Box) */}
+      <AnimatePresence>
+        {isLightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="gallery-lightbox-backdrop"
+            onClick={() => setIsLightboxOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.92, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.92, opacity: 0, y: 20 }}
+              transition={{ type: "spring", stiffness: 320, damping: 28 }}
+              className="gallery-lightbox-box"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="gallery-lightbox-header">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <span className="lightbox-badge">{productSlides[currentSlide]?.badge}</span>
+                  <span className="lightbox-title">{productSlides[currentSlide]?.title}</span>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <span className="lightbox-counter">{currentSlide + 1} / {totalSlides}</span>
+                  <button
+                    suppressHydrationWarning={true}
+                    type="button"
+                    className="lightbox-close-btn"
+                    onClick={() => setIsLightboxOpen(false)}
+                    aria-label="Close separate view"
+                  >
+                    <X size={20} />
+                  </button>
+                </div>
+              </div>
+
+              {/* Modal Main Stage */}
+              <div className="gallery-lightbox-stage">
+                <button
+                  suppressHydrationWarning={true}
+                  type="button"
+                  className="lightbox-nav-btn lightbox-prev"
+                  onClick={prevSlide}
+                  aria-label="Previous image"
+                >
+                  <ChevronLeft size={28} />
+                </button>
+
+                <div className="lightbox-image-container">
+                  <img
+                    src={productSlides[currentSlide]?.src}
+                    alt={productSlides[currentSlide]?.alt}
+                    className="lightbox-image"
+                  />
+                </div>
+
+                <button
+                  suppressHydrationWarning={true}
+                  type="button"
+                  className="lightbox-nav-btn lightbox-next"
+                  onClick={nextSlide}
+                  aria-label="Next image"
+                >
+                  <ChevronRight size={28} />
+                </button>
+              </div>
+
+              {/* Modal Thumbnails Strip */}
+              <div className="gallery-lightbox-thumbnails">
+                {productSlides.map((slide, idx) => (
+                  <button
+                    key={idx}
+                    suppressHydrationWarning={true}
+                    type="button"
+                    className={`lightbox-thumb ${currentSlide === idx ? 'active' : ''}`}
+                    onClick={() => goToSlide(idx)}
+                    aria-label={`Jump to slide ${idx + 1}`}
+                  >
+                    <img src={slide.src} alt={slide.alt} />
+                  </button>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Vertical Marquee Section (Desktop: 4-Column Multi-Directional, Mobile: Single Column) */}
       {/* Super Child Flight Section (Desktop view) */}
       <SuperFlightSection className="super-flight-desktop" />

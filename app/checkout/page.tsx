@@ -969,7 +969,7 @@ function CheckoutContent() {
                       setAddress(e.target.value);
                       saveDetailsToStorage({ address: e.target.value });
                     }}
-                    placeholder="e.g. Adhilakshmi Nagar, Mathulampett"
+                    placeholder="e.g. Flat 101, Green Valley Apartments"
                     style={{ width: '100%', padding: '9px 11px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '0.86rem' }}
                   />
                 </div>
